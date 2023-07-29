@@ -18,8 +18,8 @@ interactiveMode =
    where
        loop :: InputT IO ()
        loop = do
-           minput <- getInputLine "> "
-           case minput of
+            minput <- getInputLine "> "
+            case minput of
                Nothing -> return ()
                Just "quit" -> return ()
                Just input -> do 
@@ -32,7 +32,7 @@ getFile filePath = do
    putStrLn $ parseLine (concat (lines contents))
 
 parseLine :: String -> String
-parseLine = parseToken . map toLower
+parseLine = concatMap (parseToken . map toLower) . words
 
 parseToken :: String -> String 
 parseToken token = case token of
