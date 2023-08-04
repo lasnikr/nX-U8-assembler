@@ -5,6 +5,9 @@ import System.Environment
 import Data.Char
 import Control.Monad.IO.Class
 
+-- m_instruction, m_operand1, s_operand1, m_operand2, s_operand2
+data Instruction = Instruction Integer Integer Integer Integer Integer | Error deriving (Show)
+
 main :: IO ()
 main = do
    args <- getArgs
@@ -13,7 +16,7 @@ main = do
       _              -> interactiveMode
 
 interactiveMode :: IO ()
-interactiveMode = 
+interactiveMode =
    runInputT defaultSettings loop
    where
        loop :: InputT IO ()
@@ -22,19 +25,19 @@ interactiveMode =
             case minput of
                Nothing -> return ()
                Just "quit" -> return ()
-               Just input -> do 
+               Just input -> do
                            liftIO $ putStrLn $ parseLine input
                            loop
 
 getFile :: String -> IO ()
 getFile filePath = do
    contents <- readFile filePath
-   putStrLn $ parseLine (concat (lines contents))
+   putStrLn $ parseLine (map toLower $ concat (lines contents))
 
 parseLine :: String -> String
-parseLine = concatMap (parseToken . map toLower) . words
+parseLine x = show $ parseMnemonic $ head $ words x
 
-parseToken :: String -> String 
-parseToken token = case token of
-   "add" -> "adding\n"
-   _     -> "nothing\n"
+parseMnemonic :: String -> Instruction
+parseMnemonic x = case x of
+   "sub" -> Instruction 0x8008 0x0000 0x0000 0x0000 0x0000
+   _ -> Error
