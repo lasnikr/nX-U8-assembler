@@ -1,3 +1,4 @@
+{-# LANGUAGE DerivingStrategies #-}
 module Main (main) where
 
 import System.Console.Haskeline;
@@ -6,7 +7,7 @@ import Data.Char
 import Control.Monad.IO.Class
 
 -- m_instruction, m_operand1, s_operand1, m_operand2, s_operand2
-data Instruction = Instruction Integer Integer Integer Integer Integer | Error deriving (Show)
+data Instruction = Instruction Integer Integer Integer Integer Integer | Error deriving stock (Show)
 
 main :: IO ()
 main = do
