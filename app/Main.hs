@@ -6,8 +6,7 @@ import System.Environment
 import Data.Char
 import Control.Monad.IO.Class
 
--- m_instruction, m_operand1, s_operand1, m_operand2, s_operand2
-data Instruction = Instruction Integer Integer Integer Integer Integer | Error deriving stock (Show)
+type MachineCode = String 
 
 main :: IO ()
 main = do
@@ -20,7 +19,7 @@ interactiveMode :: IO ()
 interactiveMode =
    runInputT defaultSettings loop
    where
-       loop :: InputT IO ()
+       loop :: InputT IO () 
        loop = do
             minput <- getInputLine "> "
             case minput of
@@ -33,12 +32,15 @@ interactiveMode =
 getFile :: String -> IO ()
 getFile filePath = do
    contents <- readFile filePath
-   putStrLn $ parseLine (map toLower $ concat (lines contents))
+   putStrLn $ concatMap (parseLine . map toLower) (lines contents)
 
-parseLine :: String -> String
-parseLine x = show $ parseMnemonic $ head $ words x
+parseLine :: String -> MachineCode
+parseLine line 
+   | null line = ""
+   | otherwise = concat $ splitByCommata line
 
-parseMnemonic :: String -> Instruction
-parseMnemonic x = case x of
-   "sub" -> Instruction 0x8008 0x0000 0x0000 0x0000 0x0000
-   _ -> Error
+splitByCommata :: String -> [String]
+splitByCommata s = case dropWhile (==',') s of
+                      "" -> []
+                      s' -> w : splitByCommata s''
+                            where (w, s'') = break (==',') s'
