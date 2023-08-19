@@ -22,7 +22,8 @@ source-repository head
 
 common common-options
   build-depends:       base ^>= 4.13.0.0,
-                       haskeline ^>= 0.7.5
+                       bytestring ^>= 0.10.10.0
+                       haskeline ^>= 0.7.5,
   ghc-options:         -Wall
                        -Wcompat
                        -Widentities
@@ -40,7 +41,7 @@ common common-options
 
   default-language:    Haskell2010
 
-executable nX-U8-assembler
+executable nxasm
   import:              common-options
   hs-source-dirs:      app
   main-is:             Main.hs
