@@ -9,8 +9,11 @@ import System.Environment
 import Numeric
 import qualified Data.ByteString as B
 import Data.List
+import Control.Monad (zipWithM)
 
 type MachineCode = String
+type Error = String
+
 data LookUp = LookUp String String
 data Variable = Variable Char Int
 
@@ -59,7 +62,7 @@ main = do
         (inputPath:outputPath:_) -> getFile inputPath outputPath
         _ -> do
             putStrLn "Entering interactive mode."
-            putStrLn "To use the assembler on a file, run 'nxasm [inputPath] [outputPath]'"
+            putStrLn "To use the assembler on a file, run 'nxasm [inputPath] [outputPath]'."
             interactiveMode
 
 interactiveMode :: IO ()
@@ -74,17 +77,22 @@ interactiveMode =
                 Just "quit" -> return ()
                 Just "exit" -> return ()
                 Just input -> do
-                    liftIO $ putStrLn $ insertUnderscores $ parseLine input
+                    let result = parseLine input 1 in
+                        case result of
+                            Left err -> liftIO $ putStrLn err
+                            Right machineCode -> liftIO $ putStrLn $ insertUnderscores machineCode
                     loop
 
 getFile :: FilePath -> FilePath  -> IO ()
 getFile inputPath outputPath = do
     contents <- readFile inputPath
-    B.writeFile outputPath $ binaryStringToByteString $ concatMap parseLine (lines contents)
+    case zipWithM parseLine (lines contents) [1 ..] of
+        Right machineCodes -> B.writeFile outputPath $ binaryStringToByteString $ concat machineCodes
+        Left err -> putStrLn err
 
-parseLine :: String -> MachineCode
-parseLine line
-    | null line = ""
+parseLine :: String -> Int -> Either Error MachineCode
+parseLine line lineNumber
+    | null line = Right ""
     | otherwise =
         let wordsArr = words $ map toLower line
             mnemonic = head wordsArr
@@ -92,26 +100,26 @@ parseLine line
             case mnemonic of
                 "add" -> parseOperands line [LookUp "r%n,r%m" "1000nnnnmmmm0001", LookUp "r%n,%i" "0001nnnniiiiiiii"]
                 "or" -> parseOperands line [LookUp "r%n,r%m" "1000nnnnmmmm0011", LookUp "r%n,%i" "0011nnnniiiiiiii"]
-                _ -> error $ "No such mnemonic: '" ++ mnemonic ++ "'"
+                _ -> Left $ "Error in line " ++ show lineNumber ++ ": No such mnemonic: '" ++ mnemonic ++ "'"
 
-parseOperands :: String -> [LookUp] -> MachineCode
+parseOperands :: String -> [LookUp] -> Either Error MachineCode
 parseOperands line lookUps =
-    let withoutMnemonic = concat . tail $ words line
-        cleanLine = filter (/= ' ') withoutMnemonic
+    let withoutMnemonic = tail $ words line
+        cleanLine = concat withoutMnemonic
         matchingLookUps = [(result, vars) | LookUp prefix result <- lookUps, let (matches, vars) = matchLookups prefix cleanLine, matches]
     in case matchingLookUps of
-        [] -> error $ "Couldn't parse operands: '" ++ withoutMnemonic ++ "' for '" ++ head (words line) ++ "'"
+        [] -> Left $ "Couldn't parse operands: '" ++ unwords withoutMnemonic ++ "' for '" ++ head (words line) ++ "'"
         ((result, vars):_) -> processVariables result vars
 
-processVariables :: String -> [Variable] -> MachineCode
-processVariables result [] = result
+processVariables :: String -> [Variable] -> Either Error MachineCode
+processVariables result [] = Right result
 processVariables result (Variable char intValue : vars) =
     let binary = showBinary intValue
         availableLength = countChar char result
         inputLength = length binary
     in
         case compare inputLength availableLength of
-            GT -> error $ "Number not in valid range: " ++ show inputLength ++ " > " ++ show availableLength
+            GT -> Left $ "Number not in valid range: " ++ show intValue ++ " > " ++ show (2 ^ availableLength - 1 :: Int)
             EQ -> processVariables (replaceChars result char binary) vars
             LT -> processVariables (replaceChars result char (replicate (availableLength - inputLength) '0' ++ binary)) vars
 

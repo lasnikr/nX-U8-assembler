@@ -22,8 +22,8 @@ source-repository head
 
 common common-options
   build-depends:       base ^>= 4.13.0.0,
-                       bytestring ^>= 0.10.10.0
-                       haskeline ^>= 0.7.5,
+                       bytestring ^>= 0.10.10.0,
+                       haskeline ^>= 0.7.5
   ghc-options:         -Wall
                        -Wcompat
                        -Widentities
