@@ -7,16 +7,16 @@ import System.Environment
 import Numeric
 import qualified Data.ByteString as B
 import Data.List
-import Control.Monad (zipWithM)
 
 type MachineCode = String
 
-data Error = Error String Int
+data Result = Error String Int | MachineCode String
 data LookUp = LookUp String String
 data Variable = Variable Char Int
 
-instance Show Error where
+instance Show Result where
     show (Error message line) = "Error in line " ++ show line ++ ": " ++ message
+    show (MachineCode code) = code
 
 showBinary :: Int -> String
 showBinary int = showIntAtBase 2 intToDigit int ""
@@ -59,13 +59,21 @@ main = do
 getFile :: FilePath -> FilePath -> IO ()
 getFile inputPath outputPath = do
     contents <- readFile inputPath
-    case zipWithM parseLine (lines contents) [1 ..] of
-        Right machineCodes -> B.writeFile outputPath $ binaryStringToByteString $ concat machineCodes
-        Left err -> print err
+    let results = zipWith parseLine (lines contents) [1 ..]
+        resultSplit = partition isError results
+        errors = fst resultSplit
+        machineCodes = snd resultSplit
+    case length errors of
+        0 -> B.writeFile outputPath $ binaryStringToByteString $ concatMap show machineCodes
+        _ -> mapM_ print errors
 
-parseLine :: String -> Int -> Either Error MachineCode
+isError :: Result -> Bool
+isError (Error _ _) = True
+isError _ = False
+
+parseLine :: String -> Int -> Result
 parseLine line lineNumber
-    | null line = Right ""
+    | null line = MachineCode ""
     | otherwise =
         let wordsArr = words $ map toLower line
             mnemonic = head wordsArr
@@ -73,26 +81,26 @@ parseLine line lineNumber
             case mnemonic of
                 "add" -> parseOperands line lineNumber [LookUp "r%n,r%m" "1000nnnnmmmm0001", LookUp "r%n,%i" "0001nnnniiiiiiii"]
                 "or" -> parseOperands line lineNumber [LookUp "r%n,r%m" "1000nnnnmmmm0011", LookUp "r%n,%i" "0011nnnniiiiiiii"]
-                _ -> Left $ Error ("No such mnemonic: '" ++ mnemonic ++ "'") lineNumber
+                _ -> Error ("No such mnemonic: '" ++ mnemonic ++ "'") lineNumber
 
-parseOperands :: String -> Int -> [LookUp] -> Either Error MachineCode
+parseOperands :: String -> Int -> [LookUp] -> Result
 parseOperands line lineNumber lookUps =
     let withoutMnemonic = tail $ words line
         cleanLine = concat withoutMnemonic
         matchingLookUps = [(result, vars) | LookUp prefix result <- lookUps, let (matches, vars) = matchLookups prefix cleanLine, matches]
     in case matchingLookUps of
-        [] -> Left $ Error ("Couldn't parse operands: '" ++ unwords withoutMnemonic ++ "' for '" ++ head (words line) ++ "'") lineNumber
+        [] -> Error ("Couldn't parse operands: '" ++ unwords withoutMnemonic ++ "' for '" ++ head (words line) ++ "'") lineNumber
         ((result, vars):_) -> processVariables result lineNumber vars
 
-processVariables :: String -> Int -> [Variable] -> Either Error MachineCode
-processVariables result _ [] = Right result
+processVariables :: String -> Int -> [Variable] -> Result
+processVariables result _ [] = MachineCode result
 processVariables result lineNumber (Variable char intValue : vars) =
     let binary = showBinary intValue
         availableLength = countChar char result
         inputLength = length binary
     in
         case compare inputLength availableLength of
-            GT -> Left $ Error ("Number not in valid range: " ++ show intValue ++ " > " ++ show (2 ^ availableLength - 1 :: Int)) lineNumber
+            GT -> Error ("Number not in valid range: " ++ show intValue ++ " > " ++ show (2 ^ availableLength - 1 :: Int)) lineNumber
             EQ -> processVariables (replaceChars result char binary) lineNumber vars
             LT -> processVariables (replaceChars result char (replicate (availableLength - inputLength) '0' ++ binary)) lineNumber vars
 
