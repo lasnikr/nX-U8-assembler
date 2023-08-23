@@ -79,15 +79,16 @@ parseLine line lineNumber
             mnemonic = head wordsArr
         in
             case mnemonic of
-                "add" -> parseOperands line lineNumber [LookUp "r%n,r%m" "1000nnnnmmmm0001", LookUp "r%n,%i" "0001nnnniiiiiiii"]
-                "or" -> parseOperands line lineNumber [LookUp "r%n,r%m" "1000nnnnmmmm0011", LookUp "r%n,%i" "0011nnnniiiiiiii"]
+                "add" -> parseOperands line lineNumber [LookUp "r%n,r%m" "1000nnnnmmmm0001", LookUp "r%n,#i" "0001nnnniiiiiiii"]
+                "addc" -> parseOperands line lineNumber [LookUp "r%n,r%m" "1000_nnnn_mmmm_0110", LookUp "r%n,#i" "0110_nnnn_iiii_iiii"]
+                "or" -> parseOperands line lineNumber [LookUp "r%n,r%m" "1000nnnnmmmm0011", LookUp "r%n,#i" "0011nnnniiiiiiii"]
                 _ -> Error ("No such mnemonic: '" ++ mnemonic ++ "'") lineNumber
 
 parseOperands :: String -> Int -> [LookUp] -> Result
 parseOperands line lineNumber lookUps =
     let withoutMnemonic = tail $ words line
         cleanLine = concat withoutMnemonic
-        matchingLookUps = [(result, vars) | LookUp prefix result <- lookUps, let (matches, vars) = matchLookups prefix cleanLine, matches]
+        matchingLookUps = [(result, vars) | LookUp lookupEntry result <- lookUps, let (matches, vars) = matchLookups lookupEntry cleanLine, matches]
     in case matchingLookUps of
         [] -> Error ("Couldn't parse operands: '" ++ unwords withoutMnemonic ++ "' for '" ++ head (words line) ++ "'") lineNumber
         ((result, vars):_) -> processVariables result lineNumber vars
@@ -106,15 +107,24 @@ processVariables result lineNumber (Variable char intValue : vars) =
 
 matchLookups :: String -> String -> (Bool, [Variable])
 matchLookups [] [] = (True, [])
-matchLookups ('%':holder:restPrefix) restLine =
-    case span isDigit restLine of
-        ([], _) -> (False, [])
-        (digits, remaining) ->
-            let varValue = read digits
-                variable = Variable holder varValue
-                (success, variables) = matchLookups restPrefix remaining
-            in
-                (success, variable : variables)
+matchLookups ('%':holder:rest) ('#':restLine) =
+    consumeVariable holder restLine rest isHexDigit readHex'
+matchLookups ('%':holder:rest) restLine =
+    consumeVariable holder restLine rest isDigit read
 matchLookups (x:xs) (y:ys) =
     if x == y then matchLookups xs ys else (False, [])
 matchLookups _ _ = (False, [])
+
+consumeVariable :: Char -> String -> String -> (Char -> Bool) -> (String -> Int) -> (Bool, [Variable])
+consumeVariable character line rest isFunc readFunc =
+    case span isFunc line of
+        ([], _) -> (False, [])
+        (digits, remaining) ->
+            let varValue = readFunc digits
+                variable = Variable character varValue
+                (success, variables) = matchLookups rest remaining
+            in
+                (success, variable : variables)
+
+readHex' :: String -> Int
+readHex' hex = read $ "0x" ++ hex
