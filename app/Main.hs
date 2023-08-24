@@ -12,14 +12,19 @@ type MachineCode = String
 
 data Result = Error String Int | MachineCode String
 data LookUp = LookUp String String
-data Variable = Variable Char Int
+data Variable = Variable Char String
 
 instance Show Result where
     show (Error message line) = "Error in line " ++ show line ++ ": " ++ message
     show (MachineCode code) = code
 
 showBinary :: Int -> String
-showBinary int = showIntAtBase 2 intToDigit int ""
+showBinary int
+    | int >= 0 = showIntAtBase 2 intToDigit int ""
+    | otherwise = showIntAtBase 2 intToDigit (abs int) ""
+
+-- two'sComplement :: String -> String
+-- two'sComplement 
 
 replaceChars :: String -> Char -> String -> String
 replaceChars [] _ _ = []
@@ -32,6 +37,9 @@ countChar _ [] = 0
 countChar c (x:xs)
     | c == x = 1 + countChar c xs
     | otherwise = countChar c xs
+
+readHex' :: String -> Int
+readHex' hex = read $ "0x" ++ hex
 
 binaryChunkToByte :: MachineCode -> Int
 binaryChunkToByte st = foldl' (\x acc -> x * 2 + acc ) 0 (map digitToInt st)
@@ -88,14 +96,47 @@ parseOperands :: String -> Int -> [LookUp] -> Result
 parseOperands line lineNumber lookUps =
     let withoutMnemonic = tail $ words line
         cleanLine = concat withoutMnemonic
-        matchingLookUps = [(result, vars) | LookUp lookupEntry result <- lookUps, let (matches, vars) = matchLookups lookupEntry cleanLine, matches]
-    in case matchingLookUps of
-        [] -> Error ("Couldn't parse operands: '" ++ unwords withoutMnemonic ++ "' for '" ++ head (words line) ++ "'") lineNumber
-        ((result, vars):_) -> processVariables result lineNumber vars
 
-processVariables :: String -> Int -> [Variable] -> Result
-processVariables result _ [] = MachineCode result
-processVariables result lineNumber (Variable char intValue : vars) =
+        vars = map (lookUpToVariable cleanLine) lookUps
+        var = filter variableSuccess vars
+    in case var of
+        0 -> Error "" lineNumber
+        1 -> processVariable result lineNumber vars
+        _ -> error "not possible if done correct"
+
+lookUpToVariable :: String -> LookUp -> Maybe ([Variable], String)
+lookUpToVariable line (LookUp pattern' result) = 
+    let varArray = matchLookups pattern' line [] in
+        case varArray of 
+            Nothing -> Nothing 
+            Just arr -> Just (arr, result)
+
+variableSuccess :: Maybe ([Variable], String) -> Bool 
+variableSuccess input =
+    case input of
+        Just ([], _) -> True
+        Just ([_], _) -> True
+        _ -> False
+
+matchLookups :: String -> String -> [Variable] -> Maybe [Variable]
+matchLookups [] [] vars = Just vars
+matchLookups ('%':holder:rest) ('-':restLine) vars =
+    let variable = consumeVariable holder restLine isDigit read in
+        case variable of 
+            Nothing -> Nothing 
+            Just (var, restLine') -> matchLookups rest restLine' (var:vars)
+matchLookups ('%':holder:rest) ('#':restLine) vars =
+    let variable = consumeVariable holder restLine isHexDigit readHex' in
+        case variable of 
+            Nothing -> Nothing 
+            Just (var, lineLeft) -> matchLookups rest lineLeft (var:vars)            
+matchLookups (x:xs) (y:ys) vars =
+    if x == y then matchLookups xs ys vars else Nothing
+matchLookups _ _ _ = Nothing
+
+processVariable :: String -> Int -> Variable -> Result
+processVariable result _ [] = MachineCode result
+processVariable result lineNumber (Variable char intValue : vars) =
     let binary = showBinary intValue
         availableLength = countChar char result
         inputLength = length binary
@@ -105,26 +146,11 @@ processVariables result lineNumber (Variable char intValue : vars) =
             EQ -> processVariables (replaceChars result char binary) lineNumber vars
             LT -> processVariables (replaceChars result char (replicate (availableLength - inputLength) '0' ++ binary)) lineNumber vars
 
-matchLookups :: String -> String -> (Bool, [Variable])
-matchLookups [] [] = (True, [])
-matchLookups ('%':holder:rest) ('#':restLine) =
-    consumeVariable holder restLine rest isHexDigit readHex'
-matchLookups ('%':holder:rest) restLine =
-    consumeVariable holder restLine rest isDigit read
-matchLookups (x:xs) (y:ys) =
-    if x == y then matchLookups xs ys else (False, [])
-matchLookups _ _ = (False, [])
 
-consumeVariable :: Char -> String -> String -> (Char -> Bool) -> (String -> Int) -> (Bool, [Variable])
-consumeVariable character line rest isFunc readFunc =
+consumeVariable :: Char -> String -> (Char -> Bool) -> (String -> Int) -> Maybe (Variable, String)
+consumeVariable character line isFunc readFunc =
     case span isFunc line of
-        ([], _) -> (False, [])
+        ([], _) -> Nothing
         (digits, remaining) ->
-            let varValue = readFunc digits
-                variable = Variable character varValue
-                (success, variables) = matchLookups rest remaining
-            in
-                (success, variable : variables)
-
-readHex' :: String -> Int
-readHex' hex = read $ "0x" ++ hex
+            let varValue = readFunc digits in
+                Just (Variable character (showBinary varValue), remaining)
