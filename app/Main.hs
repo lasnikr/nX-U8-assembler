@@ -8,7 +8,8 @@ import qualified Data.ByteString as B (writeFile)
 import System.Environment (getArgs)
 import Data.Char (toLower, isDigit, isHexDigit, isSpace)
 
-type MachineCode = String
+type MachineCodeStr = String
+type ErrorStr = String
 
 data Result = Error String Int | MachineCode String
 data LookUp = LookUp String String
@@ -24,11 +25,18 @@ instance Show Variable where
 negateVariable :: Variable -> Variable
 negateVariable (Variable c i) = Variable c (-i)
 
-replaceChars :: String -> Char -> String -> String
-replaceChars [] _ _ = []
+readHex' :: String -> Int
+readHex' hex = read $ "0x" ++ hex
+
+replaceChars :: String -> Char -> String -> Maybe MachineCodeStr
+replaceChars [] _ _ = Just []
+replaceChars (num:'>':c:cs) targetChar (r:rs)
+    | c == targetChar && num == r = (num:) <$> replaceChars cs targetChar rs
+    | c == targetChar = Nothing
+    | otherwise = ((num:) <$> ('>':)) . (c:) <$> replaceChars cs targetChar (r:rs)
 replaceChars (c:cs) targetChar replacements
-    | c == targetChar = head replacements : replaceChars cs targetChar (tail replacements)
-    | otherwise = c : replaceChars cs targetChar replacements
+    | c == targetChar = (head replacements:) <$> replaceChars cs targetChar (tail replacements)
+    | otherwise = (c:) <$> replaceChars cs targetChar replacements
 
 countChar :: Char -> String -> Int
 countChar _ [] = 0
@@ -36,8 +44,15 @@ countChar c (x:xs)
     | c == x = 1 + countChar c xs
     | otherwise = countChar c xs
 
-readHex' :: String -> Int
-readHex' hex = read $ "0x" ++ hex
+variableSuccess :: Maybe ([Variable], String) -> Bool
+variableSuccess input =
+    case input of
+        Just (_, _) -> True
+        _ -> False
+
+isError :: Result -> Bool
+isError (Error _ _) = True
+isError _ = False
 
 main :: IO ()
 main = do
@@ -57,10 +72,6 @@ getFile inputPath outputPath = do
         0 -> B.writeFile outputPath $ binStringToByteString $ concatMap show machineCodes
         _ -> mapM_ print errors
 
-isError :: Result -> Bool
-isError (Error _ _) = True
-isError _ = False
-
 parseLine :: String -> Int -> Result
 parseLine line lineNumber
     | all isSpace line = MachineCode ""
@@ -68,8 +79,12 @@ parseLine line lineNumber
         let wordsArr = words $ map toLower line
             mnemonic = head wordsArr
             lookupTable = case mnemonic of
-                "add" -> [LookUp "r%n,r%m" "1000nnnnmmmm0001", LookUp "r%n,%i" "0001nnnniiiiiiii"]
+                "add" -> [LookUp "r%n,r%m" "1000nnnnmmmm0001", LookUp "r%n,%i" "0001nnnniiiiiiii", LookUp "er%n,er%m" "1111nnn0>nmmm0>m0110", LookUp "er%n,%i" "1110nnn0>n1iiiiiii"]
                 "addc" -> [LookUp "r%n,r%m" "1000nnnnmmmm0110", LookUp "r%n,%i" "0110nnnniiiiiiii"]
+                "and" -> [LookUp "r%n,r%m" "1000nnnnmmmm0010", LookUp "r%n,%i" "0010nnnniiiiiiii"]
+                "cmp" -> [LookUp "r%n,r%m" "1000nnnnmmmm0111", LookUp "r%n,%i" "0111nnnniiiiiiii"]
+                "cpmc" -> [LookUp "r%n,r%m" "1000nnnnmmmm0101", LookUp "r%n,%i" "0101nnnniiiiiiii"]
+                "mov" -> [LookUp "er%n, er%m" "1111nnn0mmm00101", LookUp "er%n,%i" "1110nnn00iiiiiii"]
                 "or" -> [LookUp "r%n,r%m" "1000nnnnmmmm0011", LookUp "r%n,%i" "0011nnnniiiiiiii"]
                 _ -> []
             parseResult = parseOperands line lookupTable
@@ -78,13 +93,13 @@ parseLine line lineNumber
                 Left err -> Error err lineNumber
                 Right code -> MachineCode code
 
-parseOperands :: String -> [LookUp] -> Either String MachineCode
+parseOperands :: String -> [LookUp] -> Either ErrorStr MachineCodeStr
 parseOperands line [] = Left $ "Mnemonic '" ++ head (words line) ++ "' not found"
 parseOperands line lookUps =
     case varWithResult of
-        [Just (vars, result)] -> processVars result vars
+        [Just (vars, result)] -> processVars result (reverse vars)
         _ -> Left errorMessage
-    where 
+    where
         withoutMnemonic = tail $ words line
         cleanLine = concat withoutMnemonic
         varsWithResult = map (lookUpToVariable cleanLine) lookUps
@@ -94,14 +109,18 @@ parseOperands line lookUps =
                 operands = unwords withoutMnemonic
             in "Couldn't parse operands: '" ++ operands ++ "' for '" ++ mnemonic ++ "'"
 
-processVars :: String -> [Variable] -> Either String MachineCode
+processVars :: String -> [Variable] -> Either ErrorStr MachineCodeStr
 processVars result [] = Right result
 processVars result (Variable char intValue : vars) =
     let availableLen = countChar char result
         bin = showBinary intValue availableLen
     in case bin of
         Left err -> Left err
-        Right machineCode -> processVars (replaceChars result char machineCode) vars
+        Right machineCode ->
+            case replaceChars result char machineCode of
+                Just newResult -> processVars newResult vars
+                Nothing -> Left $ "'" ++ machineCode ++ "' doesnt match with '" ++ result ++ "' for " ++ show char
+
 
 lookUpToVariable :: String -> LookUp -> Maybe ([Variable], String)
 lookUpToVariable line (LookUp pattern' result) =
@@ -139,15 +158,9 @@ consumeVariable character line isFunc readFunc =
             let varValue = readFunc digits in
                 Just (Variable character varValue, remaining)
 
-variableSuccess :: Maybe ([Variable], String) -> Bool
-variableSuccess input =
-    case input of
-        Just (_, _) -> True
-        _ -> False
-
-showBinary :: Int -> Int -> Either String MachineCode
+showBinary :: Int -> Int -> Either ErrorStr MachineCodeStr
 showBinary int availableLen
-    | nBins > availableLen = Left $ "Couldn't fit binary" ++ binString bins ++ " (" ++ show nBins ++ ") into " ++ show availableLen ++ " bits of space."
+    | nBins > availableLen = Left $ "Couldn't fit binary " ++ binString bins ++ " (" ++ show nBins ++ ") into " ++ show availableLen ++ " bits of space."
     | int >= 0 = Right $ binString expandedBins
     | otherwise = Right $ binString $ twosComplement expandedBins
         where

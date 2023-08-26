@@ -14,9 +14,9 @@ import qualified Data.ByteString as B
 import Data.Foldable (foldl')
 import Data.Char (digitToInt)
 
-type MachineCode = String
+type MachineCodeStr = String
 
-binStringToByteString :: MachineCode -> B.ByteString
+binStringToByteString :: MachineCodeStr -> B.ByteString
 binStringToByteString code =
     B.pack $ map (fromIntegral . chunkToByte) $ littleEndian $ chunksOf 8 code
 
@@ -25,19 +25,19 @@ isBit '1' = True
 isBit '0' = True
 isBit _ = False
 
-chunkToByte :: MachineCode -> Int
+chunkToByte :: MachineCodeStr -> Int
 chunkToByte st = foldl' (\x acc -> x * 2 + acc ) 0 (map digitToInt st)
 
 chunksOf :: Int -> [a] -> [[a]]
 chunksOf _ [] = []
 chunksOf n xs = take n xs : chunksOf n (drop n xs)
 
-littleEndian :: [MachineCode] -> [MachineCode]
+littleEndian :: [MachineCodeStr] -> [MachineCodeStr]
 littleEndian [] = []
 littleEndian [x] = [x]
 littleEndian (x:y:xs) = y : x : littleEndian xs
 
-binString :: [Int] -> MachineCode
+binString :: [Int] -> MachineCodeStr
 binString = concatMap show
 
 binary :: Int -> [Int]
