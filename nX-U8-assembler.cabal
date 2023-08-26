@@ -22,8 +22,7 @@ source-repository head
 
 common common-options
   build-depends:       base ^>= 4.13.0.0,
-                       bytestring ^>= 0.10.10.0,
-                       haskeline ^>= 0.7.5
+                       bytestring ^>= 0.10.10.0
   ghc-options:         -Wall
                        -Wcompat
                        -Widentities
@@ -45,6 +44,7 @@ executable nxasm
   import:              common-options
   hs-source-dirs:      app
   main-is:             Main.hs
+  other-modules:       Binary
   
   ghc-options:         -threaded
                        -rtsopts

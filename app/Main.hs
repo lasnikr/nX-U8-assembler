@@ -2,10 +2,11 @@
 
 module Main (main) where
 
-import Data.Char
-import System.Environment
-import qualified Data.ByteString as B
-import Data.List
+import Binary
+import Data.List (partition)
+import qualified Data.ByteString as B (writeFile)
+import System.Environment (getArgs)
+import Data.Char (toLower, isDigit, isHexDigit)
 
 type MachineCode = String
 
@@ -38,22 +39,6 @@ countChar c (x:xs)
 readHex' :: String -> Int
 readHex' hex = read $ "0x" ++ hex
 
-binaryChunkToByte :: MachineCode -> Int
-binaryChunkToByte st = foldl' (\x acc -> x * 2 + acc ) 0 (map digitToInt st)
-
-chunksOf :: Int -> [a] -> [[a]]
-chunksOf _ [] = []
-chunksOf n xs = take n xs : chunksOf n (drop n xs)
-
-littleEndian :: [MachineCode] -> [MachineCode]
-littleEndian [] = []
-littleEndian [x] = [x]
-littleEndian (x:y:xs) = y : x : littleEndian xs
-
-binaryStringToByteString :: MachineCode -> B.ByteString
-binaryStringToByteString code =
-    B.pack $ map (fromIntegral . binaryChunkToByte) $ littleEndian $ chunksOf 8 code
-
 main :: IO ()
 main = do
     args <- getArgs
@@ -69,7 +54,7 @@ getFile inputPath outputPath = do
         errors = fst resultSplit
         machineCodes = snd resultSplit
     case length errors of
-        0 -> B.writeFile outputPath $ binaryStringToByteString $ concatMap show machineCodes
+        0 -> B.writeFile outputPath $ binStringToByteString $ concatMap show machineCodes
         _ -> mapM_ print errors
 
 isError :: Result -> Bool
@@ -96,10 +81,10 @@ parseOperands line lineNumber lookUps =
         varsWithResult = map (lookUpToVariable cleanLine) lookUps
         varWithResult = filter variableSuccess varsWithResult
     in case length varWithResult of
-        0 -> Error ("Couldn't parse operands: '" ++ show varsWithResult ++ unwords withoutMnemonic ++ "' for '" ++ head (words line) ++ "'") lineNumber
+        0 -> Error ("Couldn't parse operands: '" ++ unwords withoutMnemonic ++ "' for '" ++ head (words line) ++ "'") lineNumber
         1 -> case head varWithResult of
                 Nothing -> error "not possible if done correct"
-                Just (vars, result) -> processVariable result lineNumber vars
+                Just (vars, result) -> processVars result lineNumber vars
         _ -> error "not possible if done correct"
 
 lookUpToVariable :: String -> LookUp -> Maybe ([Variable], String)
@@ -117,17 +102,22 @@ matchLookups ('%':holder:rest) ('-':restLine) vars =
             Nothing -> Nothing
             Just (var, restLine') -> matchLookups rest restLine' (negVar:vars)
                 where negVar = negateVariable var
-matchLookups ('%':holder:rest) ('#':restLine) vars =
-    let variable = consumeVariable holder restLine isHexDigit readHex' in
-        case variable of
-            Nothing -> Nothing
-            Just (var, lineLeft) -> matchLookups rest lineLeft (var:vars)
 matchLookups ('%':holder:rest) ('+':restLine) vars =
     let variable = consumeVariable holder restLine isDigit read in
         case variable of
             Nothing -> Nothing
             Just (var, restLine') -> matchLookups rest restLine' (negVar:vars)
                 where negVar = negateVariable var
+matchLookups ('%':holder:rest) ('#':restLine) vars =
+    let variable = consumeVariable holder restLine isHexDigit readHex' in
+        case variable of
+            Nothing -> Nothing
+            Just (var, lineLeft) -> matchLookups rest lineLeft (var:vars)
+matchLookups ('%':holder:rest) ('%':restLine) vars =
+    let variable = consumeVariable holder restLine isBit binToDec in
+        case variable of
+            Nothing -> Nothing
+            Just (var, lineLeft) -> matchLookups rest lineLeft (var:vars)
 matchLookups ('%':holder:rest) line vars =
     let variable = consumeVariable holder line isDigit read in
         case variable of
@@ -152,44 +142,21 @@ variableSuccess input =
         Just (_, _) -> True
         _ -> False
 
-processVariable :: String -> Int -> [Variable] -> Result
-processVariable result _ [] = MachineCode result
-processVariable result lineNumber (Variable char intValue : vars) =
+processVars :: String -> Int -> [Variable] -> Result
+processVars result _ [] = MachineCode result
+processVars result lineNumber (Variable char intValue : vars) =
     let availableLen = countChar char result
         bin = showBinary intValue availableLen
     in case bin of
         Left err -> Error err lineNumber
-        Right machineCode -> processVariable (replaceChars result char machineCode) lineNumber vars
+        Right machineCode -> processVars (replaceChars result char machineCode) lineNumber vars
 
 showBinary :: Int -> Int -> Either String MachineCode
 showBinary int availableLen
-    | nBins > availableLen = Left $ "Couldn't fit " ++ binaryString bins ++ "into " ++ show nBins ++ " bits of space."
-    | int >= 0 = Right $ binaryString expandedBins
-    | otherwise = Right $ binaryString $ twosComplement expandedBins
+    | nBins > availableLen = Left $ "Couldn't fit " ++ binString bins ++ " into " ++ show availableLen ++ " bits of space."
+    | int >= 0 = Right $ binString expandedBins
+    | otherwise = Right $ binString $ twosComplement expandedBins
         where
             bins = binary (abs int)
             nBins = length bins
             expandedBins = replicate (availableLen - length bins) 0 ++ bins
-
-binaryString :: [Int] -> String 
-binaryString = concatMap show
-
-binary :: Int -> [Int]
-binary 0 = []
-binary x = binary (div x 2) ++ [mod x 2]
-
-twosComplement :: [Int] -> [Int]
-twosComplement bits = addOne (invert bits)
-
-invert :: [Int] -> [Int]
-invert = map (\bit -> if bit == 0 then 1 else 0)
-
-addOne :: [Int] -> [Int]
-addOne bits = reverse (addWithCarry (reverse bits) 1)
-
-addWithCarry :: [Int] -> Int -> [Int]
-addWithCarry [] carry = [1 | carry == 1]
-addWithCarry (bit:bits) carry = sumBit : addWithCarry bits newCarry
-    where
-        sumBit = (bit + carry) `mod` 2
-        newCarry = (bit + carry) `div` 2
