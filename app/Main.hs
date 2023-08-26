@@ -79,13 +79,26 @@ parseLine line lineNumber
         let wordsArr = words $ map toLower line
             mnemonic = head wordsArr
             lookupTable = case mnemonic of
-                "add" -> [LookUp "r%n,r%m" "1000nnnnmmmm0001", LookUp "r%n,%i" "0001nnnniiiiiiii", LookUp "er%n,er%m" "1111nnn0>nmmm0>m0110", LookUp "er%n,%i" "1110nnn0>n1iiiiiii"]
-                "addc" -> [LookUp "r%n,r%m" "1000nnnnmmmm0110", LookUp "r%n,%i" "0110nnnniiiiiiii"]
-                "and" -> [LookUp "r%n,r%m" "1000nnnnmmmm0010", LookUp "r%n,%i" "0010nnnniiiiiiii"]
-                "cmp" -> [LookUp "r%n,r%m" "1000nnnnmmmm0111", LookUp "r%n,%i" "0111nnnniiiiiiii"]
-                "cpmc" -> [LookUp "r%n,r%m" "1000nnnnmmmm0101", LookUp "r%n,%i" "0101nnnniiiiiiii"]
-                "mov" -> [LookUp "er%n, er%m" "1111nnn0mmm00101", LookUp "er%n,%i" "1110nnn00iiiiiii"]
-                "or" -> [LookUp "r%n,r%m" "1000nnnnmmmm0011", LookUp "r%n,%i" "0011nnnniiiiiiii"]
+                -- Arithmetic Instructions
+                "add" -> [LookUp "r%n,r%m" "1000nnnnmmmm0001", LookUp "r%n,#i" "0001nnnniiiiiiii", LookUp "er%n,er%m" "1111nnn0>nmmm0>m0110", LookUp "er%n,#i" "1110nnn0>n1iiiiiii"]
+                "addc" -> [LookUp "r%n,r%m" "1000nnnnmmmm0110", LookUp "r%n,#i" "0110nnnniiiiiiii"]
+                "and" -> [LookUp "r%n,r%m" "1000nnnnmmmm0010", LookUp "r%n,#i" "0010nnnniiiiiiii"]
+                "cmp" -> [LookUp "r%n,r%m" "1000nnnnmmmm0111", LookUp "r%n,#i" "0111nnnniiiiiiii", LookUp "er%n,er%m" "1111_nnn0>n_mmm0_0111"]
+                "cpmc" -> [LookUp "r%n,r%m" "1000nnnnmmmm0101", LookUp "r%n,#i" "0101nnnniiiiiiii"]
+                "mov" -> [LookUp "r%n,r%m" "1000_nnnn_mmmm_0000", LookUp "r%n,#i" "0000_nnnn_iiii_iiii", LookUp "er%n, er%m" "1111nnn0>nmmm00101", LookUp "er%n,#i" "1110nnn0>n0iiiiiii"]
+                "or" -> [LookUp "r%n,r%m" "1000nnnnmmmm0011", LookUp "r%n,#i" "0011nnnniiiiiiii"]
+                "xor" -> [LookUp "r%n,r%m" "1000_nnnn_mmmm_0100", LookUp "r%n,%i" "0100_nnnn_iiii_iiii"]
+                "sub" -> [LookUp "r%n,r%m" "1000_nnnn_mmmm_1000"]
+                "subc" -> [LookUp "r%n,r%m" "1000_nnnn_mmmm_1001"]
+                -- Shift Instructions
+                "sll" -> [LookUp "r%n,r%m" "1000_nnnn_mmmm_1010", LookUp "r%n,%w" "1001_nnnn_0www_1010"]
+                "sllc" -> [LookUp "r%n,r%m" "1000_nnnn_mmmm_1011", LookUp "r%n,%w" "1001_nnnn_0www_1011"]
+                "sra" -> [LookUp "r%n,r%m" "1000_nnnn_mmmm_1110", LookUp "r%n,%w" "1001_nnnn_0www_1110"]
+                "srl" -> [LookUp "r%n,r%m" "1000_nnnn_mmmm_1100", LookUp "r%n,%w" "1001_nnnn_0www_1100"]
+                "srlc" -> [LookUp "r%n,r%m" "1000_nnnn_mmmm_1101", LookUp "r%n,%w" "1001_nnnn_0www_1101"]
+                -- Load Instructions
+                "l" -> [LookUp "er%n,[ea]" "1001_nnn0_0011_0010"]
+                -- Store Instructions
                 _ -> []
             parseResult = parseOperands line lookupTable
         in
@@ -131,7 +144,7 @@ lookUpToVariable line (LookUp pattern' result) =
 
 matchLookups :: String -> String -> [Variable] -> Maybe [Variable]
 matchLookups [] [] vars = Just vars
-matchLookups ('%':holder:rest) line vars =
+matchLookups ('#':holder:rest) line vars =
     let consume = case line of
             ('-':restLine) -> consumeVariable holder restLine isDigit read
             ('+':restLine) -> consumeVariable holder restLine isDigit read
@@ -141,10 +154,15 @@ matchLookups ('%':holder:rest) line vars =
     in
     case consume of
         Nothing -> Nothing
-        Just (var, restLine') -> matchLookups rest restLine' (adjust var:vars)
+        Just (var, lineLeft) -> matchLookups rest lineLeft (adjust var:vars)
             where adjust = case line of
                     ('-':_) -> negateVariable
                     _ -> id
+matchLookups ('%':holder:rest) line vars = 
+    let consume = consumeVariable holder line isDigit read
+    in case consume of
+        Nothing -> Nothing
+        Just (var, lineLeft) -> matchLookups rest lineLeft (var:vars)
 matchLookups (x:xs) (y:ys) vars
     | x == y = matchLookups xs ys vars
     | otherwise = Nothing
@@ -160,7 +178,8 @@ consumeVariable character line isFunc readFunc =
 
 showBinary :: Int -> Int -> Either ErrorStr MachineCodeStr
 showBinary int availableLen
-    | nBins > availableLen = Left $ "Couldn't fit binary " ++ binString bins ++ " (" ++ show nBins ++ ") into " ++ show availableLen ++ " bits of space."
+    | nBins > availableLen = Left $ "Couldn't fit binary " ++ binString bins ++ " (length: " 
+    ++ show nBins ++ ") into " ++ show availableLen ++ " bits of space"
     | int >= 0 = Right $ binString expandedBins
     | otherwise = Right $ binString $ twosComplement expandedBins
         where
