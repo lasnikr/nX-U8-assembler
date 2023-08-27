@@ -160,9 +160,12 @@ matchLookups ('#' : holder : rest) line vars dsr =
   let consume = case line of
         ('-' : restLine) -> consumeVariable holder restLine isDigit read
         ('+' : restLine) -> consumeVariable holder restLine isDigit read
-        ('#' : restLine) -> consumeVariable holder restLine isHexDigit readHex'
         ('%' : restLine) -> consumeVariable holder restLine isBit binToDec
-        _ -> consumeVariable holder line isDigit read
+        _ -> case consumeVariable holder line isHexDigit readHex' of
+          Just res -> case res of
+            (vs, 'h':lineLeft) -> Just (vs, lineLeft)
+            _ -> Nothing
+          Nothing -> consumeVariable holder line isDigit read
    in case consume of
         Nothing -> Nothing
         Just (var, lineLeft) -> matchLookups rest lineLeft (adjust var : vars) dsr
@@ -180,32 +183,32 @@ matchLookups (x : xs) (y : ys) vars dsr
   | otherwise = Nothing
 matchLookups _ _ _ _ = Nothing
 
-consumeDSR :: String -> Maybe (String, String)
+consumeDSR :: String -> Maybe (String, DSR)
 consumeDSR line =
-  case span isDigit line of
-    ([], _) ->
-      case line of
-        ('d' : 's' : 'r' : ':' : r) -> Just (r, "1111111010011111")
-        ('r' : r) ->
-            case span isDigit r of
-                ([], _) -> Nothing
-                (nums, ':' : rest) -> Just (rest, dsr)
-                    where
-                        digits = read nums :: Int
-                        bin = case showBinary digits 4 of
-                            Left _ -> ""
-                            Right code -> code
-                        dsr = fromMaybe "" (replaceChars "10010000dddd1111" 'd' bin)
-                _ -> Nothing
+  case line of
+    ('d' : 's' : 'r' : ':' : r) ->
+      Just (r, "1111111010011111")
+    ('r' : r) ->
+      case span isDigit r of
+        ([], _) -> Nothing
+        (nums, ':' : rest) -> Just (rest, bin (read nums) 4 "10010000dddd1111")
         _ -> Nothing
-    (digits, ':' : rest) -> Just (rest, dsr)
-        where
-            numDigits = read digits :: Int
-            bin = case showBinary numDigits 8 of
-                Left _ -> ""
-                Right code -> code
-            dsr = fromMaybe "" (replaceChars "11100011dddddddd" 'd' bin)
-    _ -> Nothing
+    _ ->
+      case span isHexDigit line of
+        ([], _) -> case span isDigit line of
+          ([], _) -> Nothing
+          (nums, ':' : rest) -> Just (rest, bin (read nums) 8 "11100011dddddddd")
+          _ -> Nothing
+        (nums, 'h' : ':' : rest) -> Just (rest, bin (readHex' nums) 8 "11100011dddddddd")
+        _ -> case span isDigit line of
+          ([], _) -> Nothing
+          (nums, ':' : rest) -> Just (rest, bin (read nums) 8 "11100011dddddddd")
+          _ -> Nothing
+  where 
+    bin digits width patt =
+      case showBinary digits width of
+        Right i -> fromMaybe "" (replaceChars patt 'd' i)
+        _ -> ""
 
 consumeVariable :: Char -> String -> (Char -> Bool) -> (String -> Int) -> Maybe (Variable, String)
 consumeVariable character line isFunc readFunc =
