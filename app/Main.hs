@@ -87,12 +87,16 @@ parseLine line lineNumber
         mnemonic = head wordsArr
         lookupTable = case mnemonic of
           -- Arithmetic Instructions
-          "add" -> [LookUp "r%n,r%m" "1000nnnnmmmm0001", LookUp "r%n,#i" "0001nnnniiiiiiii", LookUp "er%n,er%m" "1111nnn0>nmmm0>m0110", LookUp "er%n,#i" "1110nnn0>n1iiiiiii"]
+          "add" -> [LookUp "r%n,r%m" "1000nnnnmmmm0001", LookUp "r%n,#i" "0001nnnniiiiiiii", LookUp "er%n,er%m" "1111nnn0>nmmm0>m0110", LookUp "er%n,#i" "1110nnn0>n1iiiiiii",
+                    -- ADD as Control Register Access Instruction
+                    LookUp "sp,#i" "1110_0001_iiii_iiii"]
           "addc" -> [LookUp "r%n,r%m" "1000nnnnmmmm0110", LookUp "r%n,#i" "0110nnnniiiiiiii"]
           "and" -> [LookUp "r%n,r%m" "1000nnnnmmmm0010", LookUp "r%n,#i" "0010nnnniiiiiiii"]
           "cmp" -> [LookUp "r%n,r%m" "1000nnnnmmmm0111", LookUp "r%n,#i" "0111nnnniiiiiiii", LookUp "er%n,er%m" "1111_nnn0>n_mmm0_0111"]
           "cpmc" -> [LookUp "r%n,r%m" "1000nnnnmmmm0101", LookUp "r%n,#i" "0101nnnniiiiiiii"]
-          "mov" -> [LookUp "r%n,r%m" "1000_nnnn_mmmm_0000", LookUp "r%n,#i" "0000_nnnn_iiii_iiii", LookUp "er%n, er%m" "1111nnn0>nmmm00101", LookUp "er%n,#i" "1110nnn0>n0iiiiiii"]
+          "mov" -> [LookUp "r%n,r%m" "1000_nnnn_mmmm_0000", LookUp "r%n,#i" "0000_nnnn_iiii_iiii", LookUp "er%n, er%m" "1111mnnn0>nmm00101", LookUp "er%n,#i" "1110nnn0>n0iiiiiii",
+                    -- MOV as Control Register Access Instruction
+                    LookUp "ecsr,r%m" "1010_0000_mmmm_1111", LookUp "elr,er%m" "1010_mmm0>m_0000_1101", LookUp "epsw,r%m" "1010_0000_mmmm_1100", LookUp "er%n,elr" "1010_nnn0>n_0000_0101", LookUp "er%n,sp" "1010_nnn0>n_0001_1010", LookUp "psw,r%m" "1010_0000_mmmm_1011", LookUp "psw,#i" "1110_1001_iiii_iiii", LookUp "r%n,ecsr" "1010_nnnn_0000_0111", LookUp "r%n,epsw" "1010_nnnn_0000_0100", LookUp "r%n,psw" "1010_nnnn_0000_0011", LookUp "sp,er%m" "1010_0001_mmm0>m_1010"]
           "or" -> [LookUp "r%n,r%m" "1000nnnnmmmm0011", LookUp "r%n,#i" "0011nnnniiiiiiii"]
           "xor" -> [LookUp "r%n,r%m" "1000_nnnn_mmmm_0100", LookUp "r%n,%i" "0100_nnnn_iiii_iiii"]
           "sub" -> [LookUp "r%n,r%m" "1000_nnnn_mmmm_1000"]
@@ -102,10 +106,21 @@ parseLine line lineNumber
           "sllc" -> [LookUp "r%n,r%m" "1000_nnnn_mmmm_1011", LookUp "r%n,%w" "1001_nnnn_0www_1011"]
           "sra" -> [LookUp "r%n,r%m" "1000_nnnn_mmmm_1110", LookUp "r%n,%w" "1001_nnnn_0www_1110"]
           "srl" -> [LookUp "r%n,r%m" "1000_nnnn_mmmm_1100", LookUp "r%n,%w" "1001_nnnn_0www_1100"]
-          "srlc" -> [LookUp "r%n,r%m" "1000_nnnn_mmmm_1101", LookUp "r%n,%w" "1001_nnnn_0www_1101"]
+          "srlc" -> [LookUp "r%n,r%m" "1000nnnnmmmm1101", LookUp "r%n,%w" "1001nnnn0www1101"]
           -- Load Instructions
-          "l" -> [LookUp "er%n,:[ea]" "1001nnn000110010"]
+          "l" -> [LookUp "er%n,:[ea]" "1001nnn0>n00110010", LookUp "er%n,:[ea+]" "1001nnn0>n01010010", LookUp "er%n,:[er%m]" "1001_nnn0>n_mmm0>m_0010", LookUp "er%n,:#d[er%m]" "1010_nnn0>n_mmm0>m_1000_dddd_dddd_dddd_dddd", LookUp "er%n,:#d[bp]" "1011_nnn0>n_00dd_dddd", LookUp "er%n,:#d[fp]" "1011_nnn0>n_01dd_dddd", LookUp "er%n,#d" "1001_nnn0>n_0001_0010_dddd_dddd_dddd_dddd",
+                  LookUp "r%n,:[ea]" "1001_nnnn_0011_0000", LookUp "r%n,:[ea+]" "1001_nnnn_0101_0000", LookUp "r%n,:[er%m]" "1001_nnnn_mmm0>m_0000", LookUp "r%n,:#d[er%m]" "1001_nnnn_mmm0>m_1000_dddd_dddd_dddd_dddd", LookUp "r%n,:#d[bp]" "1011_nnnn_00dd_dddd", LookUp "r%n,:#d[fp]" "1101_nnnn_01dd_dddd", LookUp "r%n,#d" "1001_nnnn_0001_0000_dddd_dddd_dddd_dddd",
+                  LookUp "xr%n,:[ea]" "1001_nn0>n0>n_0011_0100", LookUp "xr%n,:[ea+]" "1001_nn0>n0>n_0101_0100", 
+                  LookUp "qr%n,:[ea]" "1001_n0>n0>n0>n_0011_0110", LookUp "qr%n,:[ea+]" "1001_n0>n0>n0>n_0101_0110"]
           -- Store Instructions
+          "st" -> [LookUp "er%n,:[ea]" "1001nnn0>n00110011", LookUp "er%n,:[ea+]" "1001nnn0>n01010011", LookUp "er%n,:[er%m]" "1001_nnn0>n_mmm0>m_0011", LookUp "er%n,:#d[er%m]" "1010_nnn0>n_mmm0>m_1001_dddd_dddd_dddd_dddd", LookUp "er%n,:#d[bp]" "1011_nnn0>n_10dd_dddd", LookUp "er%n,:#d[fp]" "1011_nnn0>n_11dd_dddd", LookUp "er%n,#d" "1001_nnn0>n_0001_0011_dddd_dddd_dddd_dddd",
+                  LookUp "r%n,:[ea]" "1001_nnnn_0011_0001", LookUp "r%n,:[ea+]" "1001_nnnn_0101_0001", LookUp "r%n,:[er%m]" "1001_nnnn_mmm0>m_0001", LookUp "r%n,:#d[er%m]" "1001_nnnn_mmm0>m_1001_dddd_dddd_dddd_dddd", LookUp "r%n,:#d[bp]" "1011_nnnn_10dd_dddd", LookUp "r%n,:#d[fp]" "1101_nnnn_11dd_dddd", LookUp "r%n,#d" "1001_nnnn_0001_0001_dddd_dddd_dddd_dddd",
+                  LookUp "xr%n,:[ea]" "1001_nn0>n0>n_0011_0101", LookUp "xr%n,:[ea+]" "1001_nn0>n0>n_0101_0101", 
+                  LookUp "qr%n,:[ea]" "1001_n0>n0>n0>n_0011_0111", LookUp "qr%n,:[ea+]" "1001_n0>n0>n0>n_0101_0111"]
+          -- PUSH/POP Instructions
+          "push" -> [LookUp "er%n" "1111_nnn0>n_0101_1110", LookUp "qr%n" "1111_n0>n0>n0>n_0111_1110", LookUp "r%n" "1111_nnnn_0100_1110", LookUp "xr%n" "1111_nn0>n0>n_0110_1110"]
+          "pop" -> [LookUp "er%n" "1111_nnn0>n_0001_1110", LookUp "qr%n" "1111_n0>n0>n0>n_0011_1110", LookUp "r%n" "1111_nnnn_0000_1110", LookUp "xr%n" "1111_nn0>n0>n_0100_1110" ]
+          
           _ -> []
         parseResult = parseOperands lowerLine lookupTable
      in case parseResult of
