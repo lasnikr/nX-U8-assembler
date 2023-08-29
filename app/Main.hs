@@ -118,7 +118,7 @@ parseLine line lineNumber
           "st" -> [LookUp "er%n,:[ea]" "1001nnn0>n00110011", LookUp "er%n,:[ea+]" "1001nnn0>n01010011", LookUp "er%n,:[er%m]" "1001_nnn0>n_mmm0>m_0011", LookUp "er%n,:#d[er%m]" "1010_nnn0>n_mmm0>m_1001_dddd_dddd_dddd_dddd", LookUp "er%n,:#d[bp]" "1011_nnn0>n_10dd_dddd", LookUp "er%n,:#d[fp]" "1011_nnn0>n_11dd_dddd", LookUp "er%n,:#d" "1001_nnn0>n_0001_0011_dddd_dddd_dddd_dddd",
                   LookUp "r%n,:[ea]" "1001_nnnn_0011_0001", LookUp "r%n,:[ea+]" "1001_nnnn_0101_0001", LookUp "r%n,:[er%m]" "1001_nnnn_mmm0>m_0001", LookUp "r%n,:#d[er%m]" "1001_nnnn_mmm0>m_1001_dddd_dddd_dddd_dddd", LookUp "r%n,:#d[bp]" "1011_nnnn_10dd_dddd", LookUp "r%n,:#d[fp]" "1101_nnnn_11dd_dddd", LookUp "r%n,:#d" "1001_nnnn_0001_0001_dddd_dddd_dddd_dddd",
                   LookUp "xr%n,:[ea]" "1001_nn0>n0>n_0011_0101", LookUp "xr%n,:[ea+]" "1001_nn0>n0>n_0101_0101", LookUp "qr%n,:[ea]" "1001_n0>n0>n0>n_0011_0111", LookUp "qr%n,:[ea+]" "1001_n0>n0>n0>n_0101_0111"]
-          -- PUSH/POP Instructions
+          -- PUSH/POP Instructions (TODO: register_list)
           "push" -> [LookUp "er%n" "1111_nnn0>n_0101_1110", LookUp "qr%n" "1111_n0>n0>n0>n_0111_1110", LookUp "r%n" "1111_nnnn_0100_1110", LookUp "xr%n" "1111_nn0>n0>n_0110_1110"]
           "pop" -> [LookUp "er%n" "1111_nnn0>n_0001_1110", LookUp "qr%n" "1111_n0>n0>n0>n_0011_1110", LookUp "r%n" "1111_nnnn_0000_1110", LookUp "xr%n" "1111_nn0>n0>n_0100_1110" ]
           -- EA Register Data Transfer Instructions
@@ -152,6 +152,23 @@ parseLine line lineNumber
           "bps" -> [LookUp ":#r" "1100_1100_rrrr_rrrr"]
           "bns" -> [LookUp ":#r" "1100_1101_rrrr_rrrr"]
           "bal" -> [LookUp ":#r" "1100_1110_rrrr_rrrr"]
+          -- Sign Extension Instruction (TODO: only three bits)
+          "extbw" -> [LookUp "er%n" "1000_nnn1_nnn0_1111"]
+          -- Software Interrupt Instructions
+          "swi" -> [LookUp "%i" "1110_0101_00ii_iiii"]
+          "brk" -> [LookUp "" "1111_1111_1111_1111"]
+          -- Branch Instructions (TODO: find out how Cadr works)
+          "b" -> [LookUp "er%n" "1111_0000_nnn0>n_0010"]
+          "bl" -> [LookUp "er%n" "1111_0000_nnn0>n_0011"]
+          -- Multiplication and Division Instructions
+          "mul" -> [LookUp "er%n,r%m" "1111_nnn0>n_mmmm_0100"]
+          "div" -> [LookUp "er%n,r%m" "1111_nnn0>n_mmmm_1001"]
+          -- Miscellaneous
+          "inc" -> [LookUp ":[ea]" "1111_1110_0010_1111"]
+          "dec" -> [LookUp ":[ea]" "1111_1110_0011_1111"]
+          "rt" -> [LookUp "" "1111_1110_0001_1111"]
+          "rti" -> [LookUp "" "1111_1110_0000_1111"]
+          "nop" -> [LookUp "" "1111_1110_1000_1111"]
           _ -> []
         parseResult = parseOperands lowerLine lookupTable
      in case parseResult of
