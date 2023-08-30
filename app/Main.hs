@@ -89,86 +89,86 @@ parseLine line lineNumber
           -- Arithmetic Instructions
           "add" -> [LookUp "r%n,r%m" "1000nnnnmmmm0001", LookUp "r%n,#i" "0001nnnniiiiiiii", LookUp "er%n,er%m" "1111nnn0>nmmm0>m0110", LookUp "er%n,#i" "1110nnn0>n1iiiiiii",
                     -- ADD as Control Register Access Instruction
-                    LookUp "sp,#i" "1110_0001_iiii_iiii"]
+                    LookUp "sp,#i" "11100001iiiiiiii"]
           "addc" -> [LookUp "r%n,r%m" "1000nnnnmmmm0110", LookUp "r%n,#i" "0110nnnniiiiiiii"]
           "and" -> [LookUp "r%n,r%m" "1000nnnnmmmm0010", LookUp "r%n,#i" "0010nnnniiiiiiii"]
-          "cmp" -> [LookUp "r%n,r%m" "1000nnnnmmmm0111", LookUp "r%n,#i" "0111nnnniiiiiiii", LookUp "er%n,er%m" "1111_nnn0>n_mmm0_0111"]
+          "cmp" -> [LookUp "r%n,r%m" "1000nnnnmmmm0111", LookUp "r%n,#i" "0111nnnniiiiiiii", LookUp "er%n,er%m" "1111nnn0>nmmm00111"]
           "cpmc" -> [LookUp "r%n,r%m" "1000nnnnmmmm0101", LookUp "r%n,#i" "0101nnnniiiiiiii"]
-          "mov" -> [LookUp "r%n,r%m" "1000_nnnn_mmmm_0000", LookUp "r%n,#i" "0000_nnnn_iiii_iiii", LookUp "er%n, er%m" "1111mnnn0>nmm00101", LookUp "er%n,#i" "1110nnn0>n0iiiiiii",
+          "mov" -> [LookUp "r%n,r%m" "1000nnnnmmmm0000", LookUp "r%n,#i" "0000nnnniiiiiiii", LookUp "er%n, er%m" "1111mnnn0>nmm00101", LookUp "er%n,#i" "1110nnn0>n0iiiiiii",
                     -- MOV as Control Register Access Instruction
-                    LookUp "ecsr,r%m" "1010_0000_mmmm_1111", LookUp "elr,er%m" "1010_mmm0>m_0000_1101", LookUp "epsw,r%m" "1010_0000_mmmm_1100", LookUp "er%n,elr" "1010_nnn0>n_0000_0101", LookUp "er%n,sp" "1010_nnn0>n_0001_1010", LookUp "psw,r%m" "1010_0000_mmmm_1011", LookUp "psw,#i" "1110_1001_iiii_iiii", LookUp "r%n,ecsr" "1010_nnnn_0000_0111", LookUp "r%n,epsw" "1010_nnnn_0000_0100", LookUp "r%n,psw" "1010_nnnn_0000_0011", LookUp "sp,er%m" "1010_0001_mmm0>m_1010",
+                    LookUp "ecsr,r%m" "10100000mmmm1111", LookUp "elr,er%m" "1010mmm0>m00001101", LookUp "epsw,r%m" "10100000mmmm1100", LookUp "er%n,elr" "1010nnn0>n00000101", LookUp "er%n,sp" "1010nnn0>n00011010", LookUp "psw,r%m" "10100000mmmm1011", LookUp "psw,#i" "11101001iiiiiiii", LookUp "r%n,ecsr" "1010nnnn00000111", LookUp "r%n,epsw" "1010nnnn00000100", LookUp "r%n,psw" "1010nnnn00000011", LookUp "sp,er%m" "10100001mmm0>m1010",
                     -- MOV as Coprocessor Data Transfer Instruction
-                    LookUp "cr%n,r%m" "1010_nnnn_mmmm_1110", LookUp "cer%n,:[ea]" "1111_nnn0>n_0010_1101", LookUp "cer%n,:[ea+]" "1111_nnn0>n_0011_1101", LookUp "cr%n,:[ea]" "1111_nnnn_0000_1101", LookUp "cr%n,:[ea+]" "1111_nnnn_0001_1101", LookUp "cxr%n,:[ea]" "1111_nn0>n0>n_0100_1101", LookUp "cxr%n,:[ea+]" "1111_nn0>n0>n_0101_1101", LookUp "cqr%n,:[ea]" "1111_n0>n0>n0>n_0110_1101", LookUp "cqr%n,:[ea+]" "1111_n0>n0>n0>n_0111_1101", 
-                    LookUp "r%n,cr%m" "1010_nnnn_mmmm_0110", LookUp ":[ea],cer%m" "1111_mmm0>m_1010_1101", LookUp ":[ea+],cer%m" "1111_mmm0>m_1011_1101", LookUp ":[ea],cr%m" "1111_mmmm_1000_1101", LookUp ":[ea+],cr%m" "1111_mmmm_1001_1101", LookUp ":[ea],cxr%m" "1111_mm0>m0>m_1100_1101", LookUp ":[ea+],cxr%m" "1111_mm0>m0>m_1101_1101", LookUp ":[ea],cqr%m" "1111_m0>m0>m0>m_1110_1101", LookUp ":[ea+],cqr%m" "1111_m0>m0>m0>m_1111_1101"]
+                    LookUp "cr%n,r%m" "1010nnnnmmmm1110", LookUp "cer%n,:[ea]" "1111nnn0>n00101101", LookUp "cer%n,:[ea+]" "1111nnn0>n00111101", LookUp "cr%n,:[ea]" "1111nnnn00001101", LookUp "cr%n,:[ea+]" "1111nnnn00011101", LookUp "cxr%n,:[ea]" "1111nn0>n0>n01001101", LookUp "cxr%n,:[ea+]" "1111nn0>n0>n01011101", LookUp "cqr%n,:[ea]" "1111n0>n0>n0>n01101101", LookUp "cqr%n,:[ea+]" "1111n0>n0>n0>n01111101", 
+                    LookUp "r%n,cr%m" "1010nnnnmmmm0110", LookUp ":[ea],cer%m" "1111mmm0>m10101101", LookUp ":[ea+],cer%m" "1111mmm0>m10111101", LookUp ":[ea],cr%m" "1111mmmm10001101", LookUp ":[ea+],cr%m" "1111mmmm10011101", LookUp ":[ea],cxr%m" "1111mm0>m0>m11001101", LookUp ":[ea+],cxr%m" "1111mm0>m0>m11011101", LookUp ":[ea],cqr%m" "1111m0>m0>m0>m11101101", LookUp ":[ea+],cqr%m" "1111m0>m0>m0>m11111101"]
           "or" -> [LookUp "r%n,r%m" "1000nnnnmmmm0011", LookUp "r%n,#i" "0011nnnniiiiiiii"]
-          "xor" -> [LookUp "r%n,r%m" "1000_nnnn_mmmm_0100", LookUp "r%n,%i" "0100_nnnn_iiii_iiii"]
-          "sub" -> [LookUp "r%n,r%m" "1000_nnnn_mmmm_1000"]
-          "subc" -> [LookUp "r%n,r%m" "1000_nnnn_mmmm_1001"]
+          "xor" -> [LookUp "r%n,r%m" "1000nnnnmmmm0100", LookUp "r%n,%i" "0100nnnniiiiiiii"]
+          "sub" -> [LookUp "r%n,r%m" "1000nnnnmmmm1000"]
+          "subc" -> [LookUp "r%n,r%m" "1000nnnnmmmm1001"]
           -- Shift Instructions
-          "sll" -> [LookUp "r%n,r%m" "1000_nnnn_mmmm_1010", LookUp "r%n,%w" "1001_nnnn_0www_1010"]
-          "sllc" -> [LookUp "r%n,r%m" "1000_nnnn_mmmm_1011", LookUp "r%n,%w" "1001_nnnn_0www_1011"]
-          "sra" -> [LookUp "r%n,r%m" "1000_nnnn_mmmm_1110", LookUp "r%n,%w" "1001_nnnn_0www_1110"]
-          "srl" -> [LookUp "r%n,r%m" "1000_nnnn_mmmm_1100", LookUp "r%n,%w" "1001_nnnn_0www_1100"]
+          "sll" -> [LookUp "r%n,r%m" "1000nnnnmmmm1010", LookUp "r%n,%w" "1001nnnn0www1010"]
+          "sllc" -> [LookUp "r%n,r%m" "1000nnnnmmmm1011", LookUp "r%n,%w" "1001nnnn0www1011"]
+          "sra" -> [LookUp "r%n,r%m" "1000nnnnmmmm1110", LookUp "r%n,%w" "1001nnnn0www1110"]
+          "srl" -> [LookUp "r%n,r%m" "1000nnnnmmmm1100", LookUp "r%n,%w" "1001nnnn0www1100"]
           "srlc" -> [LookUp "r%n,r%m" "1000nnnnmmmm1101", LookUp "r%n,%w" "1001nnnn0www1101"]
           -- Load Instructions
-          "l" -> [LookUp "er%n,:[ea]" "1001nnn0>n00110010", LookUp "er%n,:[ea+]" "1001nnn0>n01010010", LookUp "er%n,:[er%m]" "1001_nnn0>n_mmm0>m_0010", LookUp "er%n,:#d[er%m]" "1010_nnn0>n_mmm0>m_1000_dddd_dddd_dddd_dddd", LookUp "er%n,:#d[bp]" "1011_nnn0>n_00dd_dddd", LookUp "er%n,:#d[fp]" "1011_nnn0>n_01dd_dddd", LookUp "er%n,:#d" "1001_nnn0>n_0001_0010_dddd_dddd_dddd_dddd",
-                  LookUp "r%n,:[ea]" "1001_nnnn_0011_0000", LookUp "r%n,:[ea+]" "1001_nnnn_0101_0000", LookUp "r%n,:[er%m]" "1001_nnnn_mmm0>m_0000", LookUp "r%n,:#d[er%m]" "1001_nnnn_mmm0>m_1000_dddd_dddd_dddd_dddd", LookUp "r%n,:#d[bp]" "1011_nnnn_00dd_dddd", LookUp "r%n,:#d[fp]" "1101_nnnn_01dd_dddd", LookUp "r%n,:#d" "1001_nnnn_0001_0000_dddd_dddd_dddd_dddd",
-                  LookUp "xr%n,:[ea]" "1001_nn0>n0>n_0011_0100", LookUp "xr%n,:[ea+]" "1001_nn0>n0>n_0101_0100", LookUp "qr%n,:[ea]" "1001_n0>n0>n0>n_0011_0110", LookUp "qr%n,:[ea+]" "1001_n0>n0>n0>n_0101_0110"]
+          "l" -> [LookUp "er%n,:[ea]" "1001nnn0>n00110010", LookUp "er%n,:[ea+]" "1001nnn0>n01010010", LookUp "er%n,:[er%m]" "1001nnn0>nmmm0>m0010", LookUp "er%n,:#d[er%m]" "1010nnn0>nmmm0>m1000dddddddddddddddd", LookUp "er%n,:#d[bp]" "1011nnn0>n00dddddd", LookUp "er%n,:#d[fp]" "1011nnn0>n01dddddd", LookUp "er%n,:#d" "1001nnn0>n00010010dddddddddddddddd",
+                  LookUp "r%n,:[ea]" "1001nnnn00110000", LookUp "r%n,:[ea+]" "1001nnnn01010000", LookUp "r%n,:[er%m]" "1001nnnnmmm0>m0000", LookUp "r%n,:#d[er%m]" "1001nnnnmmm0>m1000dddddddddddddddd", LookUp "r%n,:#d[bp]" "1011nnnn00dddddd", LookUp "r%n,:#d[fp]" "1101nnnn01dddddd", LookUp "r%n,:#d" "1001nnnn00010000dddddddddddddddd",
+                  LookUp "xr%n,:[ea]" "1001nn0>n0>n00110100", LookUp "xr%n,:[ea+]" "1001nn0>n0>n01010100", LookUp "qr%n,:[ea]" "1001n0>n0>n0>n00110110", LookUp "qr%n,:[ea+]" "1001n0>n0>n0>n01010110"]
           -- Store Instructions
-          "st" -> [LookUp "er%n,:[ea]" "1001nnn0>n00110011", LookUp "er%n,:[ea+]" "1001nnn0>n01010011", LookUp "er%n,:[er%m]" "1001_nnn0>n_mmm0>m_0011", LookUp "er%n,:#d[er%m]" "1010_nnn0>n_mmm0>m_1001_dddd_dddd_dddd_dddd", LookUp "er%n,:#d[bp]" "1011_nnn0>n_10dd_dddd", LookUp "er%n,:#d[fp]" "1011_nnn0>n_11dd_dddd", LookUp "er%n,:#d" "1001_nnn0>n_0001_0011_dddd_dddd_dddd_dddd",
-                  LookUp "r%n,:[ea]" "1001_nnnn_0011_0001", LookUp "r%n,:[ea+]" "1001_nnnn_0101_0001", LookUp "r%n,:[er%m]" "1001_nnnn_mmm0>m_0001", LookUp "r%n,:#d[er%m]" "1001_nnnn_mmm0>m_1001_dddd_dddd_dddd_dddd", LookUp "r%n,:#d[bp]" "1011_nnnn_10dd_dddd", LookUp "r%n,:#d[fp]" "1101_nnnn_11dd_dddd", LookUp "r%n,:#d" "1001_nnnn_0001_0001_dddd_dddd_dddd_dddd",
-                  LookUp "xr%n,:[ea]" "1001_nn0>n0>n_0011_0101", LookUp "xr%n,:[ea+]" "1001_nn0>n0>n_0101_0101", LookUp "qr%n,:[ea]" "1001_n0>n0>n0>n_0011_0111", LookUp "qr%n,:[ea+]" "1001_n0>n0>n0>n_0101_0111"]
-          -- PUSH/POP Instructions (TODO: register_list)
-          "push" -> [LookUp "er%n" "1111_nnn0>n_0101_1110", LookUp "qr%n" "1111_n0>n0>n0>n_0111_1110", LookUp "r%n" "1111_nnnn_0100_1110", LookUp "xr%n" "1111_nn0>n0>n_0110_1110"]
-          "pop" -> [LookUp "er%n" "1111_nnn0>n_0001_1110", LookUp "qr%n" "1111_n0>n0>n0>n_0011_1110", LookUp "r%n" "1111_nnnn_0000_1110", LookUp "xr%n" "1111_nn0>n0>n_0100_1110" ]
+          "st" -> [LookUp "er%n,:[ea]" "1001nnn0>n00110011", LookUp "er%n,:[ea+]" "1001nnn0>n01010011", LookUp "er%n,:[er%m]" "1001nnn0>nmmm0>m0011", LookUp "er%n,:#d[er%m]" "1010nnn0>nmmm0>m1001dddddddddddddddd", LookUp "er%n,:#d[bp]" "1011nnn0>n10dddddd", LookUp "er%n,:#d[fp]" "1011nnn0>n11dddddd", LookUp "er%n,:#d" "1001nnn0>n00010011dddddddddddddddd",
+                  LookUp "r%n,:[ea]" "1001nnnn00110001", LookUp "r%n,:[ea+]" "1001nnnn01010001", LookUp "r%n,:[er%m]" "1001nnnnmmm0>m0001", LookUp "r%n,:#d[er%m]" "1001nnnnmmm0>m1001dddddddddddddddd", LookUp "r%n,:#d[bp]" "1011nnnn10dddddd", LookUp "r%n,:#d[fp]" "1101nnnn11dddddd", LookUp "r%n,:#d" "1001nnnn00010001dddddddddddddddd",
+                  LookUp "xr%n,:[ea]" "1001nn0>n0>n00110101", LookUp "xr%n,:[ea+]" "1001nn0>n0>n01010101", LookUp "qr%n,:[ea]" "1001n0>n0>n0>n00110111", LookUp "qr%n,:[ea+]" "1001n0>n0>n0>n01010111"]
+          -- PUSH/POP Instructions (TODO: registerlist)
+          "push" -> [LookUp "er%n" "1111nnn0>n01011110", LookUp "qr%n" "1111n0>n0>n0>n01111110", LookUp "r%n" "1111nnnn01001110", LookUp "xr%n" "1111nn0>n0>n01101110"]
+          "pop" -> [LookUp "er%n" "1111nnn0>n00011110", LookUp "qr%n" "1111n0>n0>n0>n00111110", LookUp "r%n" "1111nnnn00001110", LookUp "xr%n" "1111nn0>n0>n01001110" ]
           -- EA Register Data Transfer Instructions
-          "lea" -> [LookUp ":[er%m]" "1111_0000_mmm0>m_1010", LookUp ":#d[er%m]" "1111_0000_mmm0_1011_dddd_dddd_dddd_dddd", LookUp ":#d" "1111_0000_0000_1100_dddd_dddd_dddd_dddd"]
+          "lea" -> [LookUp ":[er%m]" "11110000mmm0>m1010", LookUp ":#d[er%m]" "11110000mmm01011dddddddddddddddd", LookUp ":#d" "1111000000001100dddddddddddddddd"]
           -- ALU Instructions
-          "daa" -> [LookUp "r%n" "1000_nnnn_0001_1111"]
-          "das" -> [LookUp "r%n" "1000_nnnn_0011_1111"]
-          "neg" -> [LookUp "r%n" "1000_nnnn_0101_1111"]
+          "daa" -> [LookUp "r%n" "1000nnnn00011111"]
+          "das" -> [LookUp "r%n" "1000nnnn00111111"]
+          "neg" -> [LookUp "r%n" "1000nnnn01011111"]
           -- Bit Access Instructions
-          "sb" -> [LookUp "r%n.%b" "1010_nnnn_0bbb_0000", LookUp ":#d.%b" "1010_0000_1bbb_0000_dddd_dddd_dddd_dddd"]
-          "rb" -> [LookUp "r%n.%b" "1010_nnnn_0bbb_0010", LookUp ":#d.%b" "1010_0000_1bbb_0010_dddd_dddd_dddd_dddd"]
-          "tb" -> [LookUp "r%n.%b" "1010_nnnn_0bbb_0001", LookUp ":#d.%b" "1010_0000_1bbb_0001_dddd_dddd_dddd_dddd"]
-          "ei" -> [LookUp "" "1110_1101_0000_1000"]
-          "di" -> [LookUp "" "1110_1011_1111_0111"]
-          "sc" -> [LookUp "" "1110_1101_1000_0000"]
-          "rc" -> [LookUp "" "1110_1011_0111_1111"]
-          "cplc" -> [LookUp "" "1111_1110_1100_1111"]
+          "sb" -> [LookUp "r%n.%b" "1010nnnn0bbb0000", LookUp ":#d.%b" "101000001bbb0000dddddddddddddddd"]
+          "rb" -> [LookUp "r%n.%b" "1010nnnn0bbb0010", LookUp ":#d.%b" "101000001bbb0010dddddddddddddddd"]
+          "tb" -> [LookUp "r%n.%b" "1010nnnn0bbb0001", LookUp ":#d.%b" "101000001bbb0001dddddddddddddddd"]
+          "ei" -> [LookUp "" "1110110100001000"]
+          "di" -> [LookUp "" "1110101111110111"]
+          "sc" -> [LookUp "" "1110110110000000"]
+          "rc" -> [LookUp "" "1110101101111111"]
+          "cplc" -> [LookUp "" "1111111011001111"]
           -- Conditional Relative Branch Instructions
-          "bge" -> [LookUp "#r" "1100_0000_rrrr_rrrr"]
-          "blt" -> [LookUp "#r" "1100_0001_rrrr_rrrr"]
-          "bgt" -> [LookUp "#r" "1100_0010_rrrr_rrrr"]
-          "ble" -> [LookUp "#r" "1100_0011_rrrr_rrrr"]
-          "bges" -> [LookUp "#r" "1100_0100_rrrr_rrrr"]
-          "blts" -> [LookUp "#r" "1100_0101_rrrr_rrrr"]
-          "bgts" -> [LookUp "#r" "1100_0110_rrrr_rrrr"]
-          "bles" -> [LookUp "#r" "1100_0111_rrrr_rrrr"]
-          "bne" -> [LookUp "#r" "1100_1000_rrrr_rrrr"]
-          "beq" -> [LookUp "#r" "1100_1001_rrrr_rrrr"]
-          "bnv" -> [LookUp "#r" "1100_1010_rrrr_rrrr"]
-          "bov" -> [LookUp "#r" "1100_1011_rrrr_rrrr"]
-          "bps" -> [LookUp "#r" "1100_1100_rrrr_rrrr"]
-          "bns" -> [LookUp "#r" "1100_1101_rrrr_rrrr"]
-          "bal" -> [LookUp "#r" "1100_1110_rrrr_rrrr"]
+          "bge" -> [LookUp "#r" "11000000rrrrrrrr"]
+          "blt" -> [LookUp "#r" "11000001rrrrrrrr"]
+          "bgt" -> [LookUp "#r" "11000010rrrrrrrr"]
+          "ble" -> [LookUp "#r" "11000011rrrrrrrr"]
+          "bges" -> [LookUp "#r" "11000100rrrrrrrr"]
+          "blts" -> [LookUp "#r" "11000101rrrrrrrr"]
+          "bgts" -> [LookUp "#r" "11000110rrrrrrrr"]
+          "bles" -> [LookUp "#r" "11000111rrrrrrrr"]
+          "bne" -> [LookUp "#r" "11001000rrrrrrrr"]
+          "beq" -> [LookUp "#r" "11001001rrrrrrrr"]
+          "bnv" -> [LookUp "#r" "11001010rrrrrrrr"]
+          "bov" -> [LookUp "#r" "11001011rrrrrrrr"]
+          "bps" -> [LookUp "#r" "11001100rrrrrrrr"]
+          "bns" -> [LookUp "#r" "11001101rrrrrrrr"]
+          "bal" -> [LookUp "#r" "11001110rrrrrrrr"]
           -- Sign Extension Instruction (TODO: only three bits)
-          "extbw" -> [LookUp "er%n" "1000_nnn1_nnn0_1111"]
+          "extbw" -> [LookUp "er%n" "1000nnn1nnn01111"]
           -- Software Interrupt Instructions
-          "swi" -> [LookUp "%i" "1110_0101_00ii_iiii"]
-          "brk" -> [LookUp "" "1111_1111_1111_1111"]
+          "swi" -> [LookUp "%i" "1110010100iiiiii"]
+          "brk" -> [LookUp "" "1111111111111111"]
           -- Branch Instructions (TODO: find out how Cadr works)
-          "b" -> [LookUp "er%n" "1111_0000_nnn0>n_0010"]
-          "bl" -> [LookUp "er%n" "1111_0000_nnn0>n_0011"]
+          "b" -> [LookUp "er%n" "11110000nnn0>n0010"]
+          "bl" -> [LookUp "er%n" "11110000nnn0>n0011"]
           -- Multiplication and Division Instructions
-          "mul" -> [LookUp "er%n,r%m" "1111_nnn0>n_mmmm_0100"]
-          "div" -> [LookUp "er%n,r%m" "1111_nnn0>n_mmmm_1001"]
+          "mul" -> [LookUp "er%n,r%m" "1111nnn0>nmmmm0100"]
+          "div" -> [LookUp "er%n,r%m" "1111nnn0>nmmmm1001"]
           -- Miscellaneous
-          "inc" -> [LookUp ":[ea]" "1111_1110_0010_1111"]
-          "dec" -> [LookUp ":[ea]" "1111_1110_0011_1111"]
-          "rt" -> [LookUp "" "1111_1110_0001_1111"]
-          "rti" -> [LookUp "" "1111_1110_0000_1111"]
-          "nop" -> [LookUp "" "1111_1110_1000_1111"]
+          "inc" -> [LookUp ":[ea]" "1111111000101111"]
+          "dec" -> [LookUp ":[ea]" "1111111000111111"]
+          "rt" -> [LookUp "" "1111111000011111"]
+          "rti" -> [LookUp "" "1111111000001111"]
+          "nop" -> [LookUp "" "1111111010001111"]
           _ -> []
         parseResult = parseOperands lowerLine lookupTable
      in case parseResult of
