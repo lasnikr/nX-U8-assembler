@@ -78,12 +78,15 @@ getFile inputPath outputPath = do
     0 -> B.writeFile outputPath $ binStringToByteString $ concatMap show machineCodes
     _ -> mapM_ print errors
 
+removeComments :: String -> String
+removeComments = takeWhile (/= ';')
+
 parseLine :: String -> Int -> Result
 parseLine line lineNumber
-  | all isSpace line = MachineCode ""
+  | all isSpace $ removeComments line = MachineCode ""
   | otherwise =
-    let lowerLine = map toLower line
-        wordsArr = words lowerLine
+    let cleanLine = removeComments $ map toLower line
+        wordsArr = words cleanLine
         mnemonic = head wordsArr
         lookupTable = case mnemonic of
           -- Arithmetic Instructions
@@ -98,8 +101,8 @@ parseLine line lineNumber
                     -- MOV as Control Register Access Instruction
                     LookUp "ecsr,r%m" "10100000mmmm1111", LookUp "elr,er%m" "1010mmm0>m00001101", LookUp "epsw,r%m" "10100000mmmm1100", LookUp "er%n,elr" "1010nnn0>n00000101", LookUp "er%n,sp" "1010nnn0>n00011010", LookUp "psw,r%m" "10100000mmmm1011", LookUp "psw,#i" "11101001iiiiiiii", LookUp "r%n,ecsr" "1010nnnn00000111", LookUp "r%n,epsw" "1010nnnn00000100", LookUp "r%n,psw" "1010nnnn00000011", LookUp "sp,er%m" "10100001mmm0>m1010",
                     -- MOV as Coprocessor Data Transfer Instruction
-                    LookUp "cr%n,r%m" "1010nnnnmmmm1110", LookUp "cer%n,:[ea]" "1111nnn0>n00101101", LookUp "cer%n,:[ea+]" "1111nnn0>n00111101", LookUp "cr%n,:[ea]" "1111nnnn00001101", LookUp "cr%n,:[ea+]" "1111nnnn00011101", LookUp "cxr%n,:[ea]" "1111nn0>n0>n01001101", LookUp "cxr%n,:[ea+]" "1111nn0>n0>n01011101", LookUp "cqr%n,:[ea]" "1111n0>n0>n0>n01101101", LookUp "cqr%n,:[ea+]" "1111n0>n0>n0>n01111101", 
-                    LookUp "r%n,cr%m" "1010nnnnmmmm0110", LookUp ":[ea],cer%m" "1111mmm0>m10101101", LookUp ":[ea+],cer%m" "1111mmm0>m10111101", LookUp ":[ea],cr%m" "1111mmmm10001101", LookUp ":[ea+],cr%m" "1111mmmm10011101", LookUp ":[ea],cxr%m" "1111mm0>m0>m11001101", LookUp ":[ea+],cxr%m" "1111mm0>m0>m11011101", LookUp ":[ea],cqr%m" "1111m0>m0>m0>m11101101", LookUp ":[ea+],cqr%m" "1111m0>m0>m0>m11111101"]
+                    LookUp "cr%n,r%m" "1010nnnnmmmm1110", LookUp "cer%n,;[ea]" "1111nnn0>n00101101", LookUp "cer%n,;[ea+]" "1111nnn0>n00111101", LookUp "cr%n,;[ea]" "1111nnnn00001101", LookUp "cr%n,;[ea+]" "1111nnnn00011101", LookUp "cxr%n,;[ea]" "1111nn0>n0>n01001101", LookUp "cxr%n,;[ea+]" "1111nn0>n0>n01011101", LookUp "cqr%n,;[ea]" "1111n0>n0>n0>n01101101", LookUp "cqr%n,;[ea+]" "1111n0>n0>n0>n01111101",
+                    LookUp "r%n,cr%m" "1010nnnnmmmm0110", LookUp ";[ea],cer%m" "1111mmm0>m10101101", LookUp ";[ea+],cer%m" "1111mmm0>m10111101", LookUp ";[ea],cr%m" "1111mmmm10001101", LookUp ";[ea+],cr%m" "1111mmmm10011101", LookUp ";[ea],cxr%m" "1111mm0>m0>m11001101", LookUp ";[ea+],cxr%m" "1111mm0>m0>m11011101", LookUp ";[ea],cqr%m" "1111m0>m0>m0>m11101101", LookUp ";[ea+],cqr%m" "1111m0>m0>m0>m11111101"]
           "or" -> [LookUp "r%n,r%m" "1000nnnnmmmm0011", LookUp "r%n,#i" "0011nnnniiiiiiii"]
           "xor" -> [LookUp "r%n,r%m" "1000nnnnmmmm0100", LookUp "r%n,%i" "0100nnnniiiiiiii"]
           "sub" -> [LookUp "r%n,r%m" "1000nnnnmmmm1000"]
@@ -111,26 +114,26 @@ parseLine line lineNumber
           "srl" -> [LookUp "r%n,r%m" "1000nnnnmmmm1100", LookUp "r%n,%w" "1001nnnn0www1100"]
           "srlc" -> [LookUp "r%n,r%m" "1000nnnnmmmm1101", LookUp "r%n,%w" "1001nnnn0www1101"]
           -- Load Instructions
-          "l" -> [LookUp "er%n,:[ea]" "1001nnn0>n00110010", LookUp "er%n,:[ea+]" "1001nnn0>n01010010", LookUp "er%n,:[er%m]" "1001nnn0>nmmm0>m0010", LookUp "er%n,:#d[er%m]" "1010nnn0>nmmm0>m1000dddddddddddddddd", LookUp "er%n,:#d[bp]" "1011nnn0>n00dddddd", LookUp "er%n,:#d[fp]" "1011nnn0>n01dddddd", LookUp "er%n,:#d" "1001nnn0>n00010010dddddddddddddddd",
-                  LookUp "r%n,:[ea]" "1001nnnn00110000", LookUp "r%n,:[ea+]" "1001nnnn01010000", LookUp "r%n,:[er%m]" "1001nnnnmmm0>m0000", LookUp "r%n,:#d[er%m]" "1001nnnnmmm0>m1000dddddddddddddddd", LookUp "r%n,:#d[bp]" "1011nnnn00dddddd", LookUp "r%n,:#d[fp]" "1101nnnn01dddddd", LookUp "r%n,:#d" "1001nnnn00010000dddddddddddddddd",
-                  LookUp "xr%n,:[ea]" "1001nn0>n0>n00110100", LookUp "xr%n,:[ea+]" "1001nn0>n0>n01010100", LookUp "qr%n,:[ea]" "1001n0>n0>n0>n00110110", LookUp "qr%n,:[ea+]" "1001n0>n0>n0>n01010110"]
+          "l" -> [LookUp "er%n,;[ea]" "1001nnn0>n00110010", LookUp "er%n,;[ea+]" "1001nnn0>n01010010", LookUp "er%n,;[er%m]" "1001nnn0>nmmm0>m0010", LookUp "er%n,;#d[er%m]" "1010nnn0>nmmm0>m1000dddddddddddddddd", LookUp "er%n,;#d[bp]" "1011nnn0>n00dddddd", LookUp "er%n,;#d[fp]" "1011nnn0>n01dddddd", LookUp "er%n,;#d" "1001nnn0>n00010010dddddddddddddddd",
+                  LookUp "r%n,;[ea]" "1001nnnn00110000", LookUp "r%n,;[ea+]" "1001nnnn01010000", LookUp "r%n,;[er%m]" "1001nnnnmmm0>m0000", LookUp "r%n,;#d[er%m]" "1001nnnnmmm0>m1000dddddddddddddddd", LookUp "r%n,;#d[bp]" "1011nnnn00dddddd", LookUp "r%n,;#d[fp]" "1101nnnn01dddddd", LookUp "r%n,;#d" "1001nnnn00010000dddddddddddddddd",
+                  LookUp "xr%n,;[ea]" "1001nn0>n0>n00110100", LookUp "xr%n,;[ea+]" "1001nn0>n0>n01010100", LookUp "qr%n,;[ea]" "1001n0>n0>n0>n00110110", LookUp "qr%n,;[ea+]" "1001n0>n0>n0>n01010110"]
           -- Store Instructions
-          "st" -> [LookUp "er%n,:[ea]" "1001nnn0>n00110011", LookUp "er%n,:[ea+]" "1001nnn0>n01010011", LookUp "er%n,:[er%m]" "1001nnn0>nmmm0>m0011", LookUp "er%n,:#d[er%m]" "1010nnn0>nmmm0>m1001dddddddddddddddd", LookUp "er%n,:#d[bp]" "1011nnn0>n10dddddd", LookUp "er%n,:#d[fp]" "1011nnn0>n11dddddd", LookUp "er%n,:#d" "1001nnn0>n00010011dddddddddddddddd",
-                  LookUp "r%n,:[ea]" "1001nnnn00110001", LookUp "r%n,:[ea+]" "1001nnnn01010001", LookUp "r%n,:[er%m]" "1001nnnnmmm0>m0001", LookUp "r%n,:#d[er%m]" "1001nnnnmmm0>m1001dddddddddddddddd", LookUp "r%n,:#d[bp]" "1011nnnn10dddddd", LookUp "r%n,:#d[fp]" "1101nnnn11dddddd", LookUp "r%n,:#d" "1001nnnn00010001dddddddddddddddd",
-                  LookUp "xr%n,:[ea]" "1001nn0>n0>n00110101", LookUp "xr%n,:[ea+]" "1001nn0>n0>n01010101", LookUp "qr%n,:[ea]" "1001n0>n0>n0>n00110111", LookUp "qr%n,:[ea+]" "1001n0>n0>n0>n01010111"]
-          -- PUSH/POP Instructions (TODO: registerlist)
+          "st" -> [LookUp "er%n,;[ea]" "1001nnn0>n00110011", LookUp "er%n,;[ea+]" "1001nnn0>n01010011", LookUp "er%n,;[er%m]" "1001nnn0>nmmm0>m0011", LookUp "er%n,;#d[er%m]" "1010nnn0>nmmm0>m1001dddddddddddddddd", LookUp "er%n,;#d[bp]" "1011nnn0>n10dddddd", LookUp "er%n,;#d[fp]" "1011nnn0>n11dddddd", LookUp "er%n,;#d" "1001nnn0>n00010011dddddddddddddddd",
+                  LookUp "r%n,;[ea]" "1001nnnn00110001", LookUp "r%n,;[ea+]" "1001nnnn01010001", LookUp "r%n,;[er%m]" "1001nnnnmmm0>m0001", LookUp "r%n,;#d[er%m]" "1001nnnnmmm0>m1001dddddddddddddddd", LookUp "r%n,;#d[bp]" "1011nnnn10dddddd", LookUp "r%n,;#d[fp]" "1101nnnn11dddddd", LookUp "r%n,;#d" "1001nnnn00010001dddddddddddddddd",
+                  LookUp "xr%n,;[ea]" "1001nn0>n0>n00110101", LookUp "xr%n,;[ea+]" "1001nn0>n0>n01010101", LookUp "qr%n,;[ea]" "1001n0>n0>n0>n00110111", LookUp "qr%n,;[ea+]" "1001n0>n0>n0>n01010111"]
+          -- PUSH/POP Instructions (TODO: register_list)
           "push" -> [LookUp "er%n" "1111nnn0>n01011110", LookUp "qr%n" "1111n0>n0>n0>n01111110", LookUp "r%n" "1111nnnn01001110", LookUp "xr%n" "1111nn0>n0>n01101110"]
           "pop" -> [LookUp "er%n" "1111nnn0>n00011110", LookUp "qr%n" "1111n0>n0>n0>n00111110", LookUp "r%n" "1111nnnn00001110", LookUp "xr%n" "1111nn0>n0>n01001110" ]
           -- EA Register Data Transfer Instructions
-          "lea" -> [LookUp ":[er%m]" "11110000mmm0>m1010", LookUp ":#d[er%m]" "11110000mmm01011dddddddddddddddd", LookUp ":#d" "1111000000001100dddddddddddddddd"]
+          "lea" -> [LookUp ";[er%m]" "11110000mmm0>m1010", LookUp ";#d[er%m]" "11110000mmm01011dddddddddddddddd", LookUp ";#d" "1111000000001100dddddddddddddddd"]
           -- ALU Instructions
           "daa" -> [LookUp "r%n" "1000nnnn00011111"]
           "das" -> [LookUp "r%n" "1000nnnn00111111"]
           "neg" -> [LookUp "r%n" "1000nnnn01011111"]
           -- Bit Access Instructions
-          "sb" -> [LookUp "r%n.%b" "1010nnnn0bbb0000", LookUp ":#d.%b" "101000001bbb0000dddddddddddddddd"]
-          "rb" -> [LookUp "r%n.%b" "1010nnnn0bbb0010", LookUp ":#d.%b" "101000001bbb0010dddddddddddddddd"]
-          "tb" -> [LookUp "r%n.%b" "1010nnnn0bbb0001", LookUp ":#d.%b" "101000001bbb0001dddddddddddddddd"]
+          "sb" -> [LookUp "r%n.%b" "1010nnnn0bbb0000", LookUp ";#d.%b" "101000001bbb0000dddddddddddddddd"]
+          "rb" -> [LookUp "r%n.%b" "1010nnnn0bbb0010", LookUp ";#d.%b" "101000001bbb0010dddddddddddddddd"]
+          "tb" -> [LookUp "r%n.%b" "1010nnnn0bbb0001", LookUp ";#d.%b" "101000001bbb0001dddddddddddddddd"]
           "ei" -> [LookUp "" "1110110100001000"]
           "di" -> [LookUp "" "1110101111110111"]
           "sc" -> [LookUp "" "1110110110000000"]
@@ -157,20 +160,20 @@ parseLine line lineNumber
           -- Software Interrupt Instructions
           "swi" -> [LookUp "%i" "1110010100iiiiii"]
           "brk" -> [LookUp "" "1111111111111111"]
-          -- Branch Instructions (TODO: find out how Cadr works)
-          "b" -> [LookUp "er%n" "11110000nnn0>n0010"]
-          "bl" -> [LookUp "er%n" "11110000nnn0>n0011"]
+          -- Branch Instructions
+          "b" -> [LookUp "er%n" "11110000nnn0>n0010", LookUp "%g:%c" "1111gggg00000000cccccccccccccccc"]
+          "bl" -> [LookUp "er%n" "11110000nnn0>n0011", LookUp "%g:%c" "1111gggg00000001cccccccccccccccc"]
           -- Multiplication and Division Instructions
           "mul" -> [LookUp "er%n,r%m" "1111nnn0>nmmmm0100"]
           "div" -> [LookUp "er%n,r%m" "1111nnn0>nmmmm1001"]
           -- Miscellaneous
-          "inc" -> [LookUp ":[ea]" "1111111000101111"]
-          "dec" -> [LookUp ":[ea]" "1111111000111111"]
+          "inc" -> [LookUp ";[ea]" "1111111000101111"]
+          "dec" -> [LookUp ";[ea]" "1111111000111111"]
           "rt" -> [LookUp "" "1111111000011111"]
           "rti" -> [LookUp "" "1111111000001111"]
           "nop" -> [LookUp "" "1111111010001111"]
           _ -> []
-        parseResult = parseOperands lowerLine lookupTable
+        parseResult = parseOperands cleanLine lookupTable
      in case parseResult of
           Left err -> Error err lineNumber
           Right code -> MachineCode code
@@ -215,7 +218,7 @@ lookUpToVariable line (LookUp pattern' result) =
 
 matchLookups :: String -> String -> [Variable] -> DSR -> Maybe ([Variable], DSR)
 matchLookups [] [] vars dsr = Just (vars, dsr)
-matchLookups (':' : rest) line vars dsr =
+matchLookups (';' : rest) line vars dsr =
     case consumeDSR line of
         Just (restLine, dsr') -> matchLookups rest restLine vars dsr'
         Nothing -> matchLookups rest line vars dsr
@@ -224,11 +227,10 @@ matchLookups ('#' : holder : rest) line vars dsr =
         ('-' : restLine) -> consumeVariable holder restLine isDigit read
         ('+' : restLine) -> consumeVariable holder restLine isDigit read
         ('%' : restLine) -> consumeVariable holder restLine isBit binToDec
-        _ -> case consumeVariable holder line isHexDigit readHex' of
-          Just res -> case res of
-            (vs, 'h':lineLeft) -> Just (vs, lineLeft)
-            _ -> Nothing
+        _ -> case hex of
+          Just _ -> hex
           Nothing -> consumeVariable holder line isDigit read
+          where hex = consumeHex holder line
    in case consume of
         Nothing -> Nothing
         Just (var, lineLeft) -> matchLookups rest lineLeft (adjust var : vars) dsr
@@ -267,11 +269,23 @@ consumeDSR line =
           ([], _) -> Nothing
           (nums, ':' : rest) -> Just (rest, bin (read nums) 8 "11100011dddddddd")
           _ -> Nothing
-  where 
+  where
     bin digits width patt =
       case showBinary digits width of
         Right i -> fromMaybe "" (replaceChars patt 'd' i)
         _ -> ""
+
+consumeHex :: Char -> String -> Maybe (Variable, String)
+consumeHex c s = case s of
+  [] -> Nothing
+  ('0':'x':str) -> case span isHexDigit str of
+    ([],_) -> Nothing
+    (hex, rest) -> Just (Variable c (readHex' hex), rest)
+  str -> case span isHexDigit str of
+    ([],_) -> Nothing
+    (hex, rest) -> case rest of
+      ('h':r) -> Just (Variable c (readHex' hex), r)
+      _ -> Nothing
 
 consumeVariable :: Char -> String -> (Char -> Bool) -> (String -> Int) -> Maybe (Variable, String)
 consumeVariable character line isFunc readFunc =
