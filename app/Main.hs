@@ -39,7 +39,9 @@ replaceChars [] _ _ = Just []
 replaceChars (num : '>' : c : cs) targetChar (r : rs)
   | c == targetChar && num == r = (num :) <$> replaceChars cs targetChar rs
   | c == targetChar = Nothing
-  | otherwise = ((num :) <$> ('>' :)) . (c :) <$> replaceChars cs targetChar (r : rs)
+  | otherwise = ([num,'>',c] ++) <$> replaceChars cs targetChar (r : rs)
+-- hack for extbw
+replaceChars ('*':'*':'*':cs) targetChar (st:sn:tr : rs) = ([st, sn, tr] ++) <$> replaceChars cs targetChar (st:sn:tr:rs)
 replaceChars (c : cs) targetChar replacements
   | c == targetChar = (head replacements :) <$> replaceChars cs targetChar (tail replacements)
   | otherwise = (c :) <$> replaceChars cs targetChar replacements
@@ -155,14 +157,14 @@ parseLine line lineNumber
           "bps" -> [LookUp "#r" "11001100rrrrrrrr"]
           "bns" -> [LookUp "#r" "11001101rrrrrrrr"]
           "bal" -> [LookUp "#r" "11001110rrrrrrrr"]
-          -- Sign Extension Instruction (TODO: only three bits)
-          "extbw" -> [LookUp "er%n" "1000nnn1nnn01111"]
+          -- Sign Extension Instruction
+          "extbw" -> [LookUp "er%n" "1000***1nnn0>n1111"]
           -- Software Interrupt Instructions
           "swi" -> [LookUp "%i" "1110010100iiiiii"]
           "brk" -> [LookUp "" "1111111111111111"]
           -- Branch Instructions
-          "b" -> [LookUp "er%n" "11110000nnn0>n0010", LookUp "%g:%c" "1111gggg00000000cccccccccccccccc"]
-          "bl" -> [LookUp "er%n" "11110000nnn0>n0011", LookUp "%g:%c" "1111gggg00000001cccccccccccccccc"]
+          "b" -> [LookUp "er%n" "11110000nnn0>n0010", LookUp "#g:%c" "1111gggg00000000cccccccccccccccc"]
+          "bl" -> [LookUp "er%n" "11110000nnn0>n0011", LookUp "#g:%c" "1111gggg00000001cccccccccccccccc"]
           -- Multiplication and Division Instructions
           "mul" -> [LookUp "er%n,r%m" "1111nnn0>nmmmm0100"]
           "div" -> [LookUp "er%n,r%m" "1111nnn0>nmmmm1001"]
