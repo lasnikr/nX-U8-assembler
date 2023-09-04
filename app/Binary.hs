@@ -10,7 +10,7 @@ module Binary
 ,   binToDec
 ) where
 
-import qualified Data.ByteString as B
+import qualified Data.ByteString as B (pack, ByteString)
 import Data.Foldable (foldl')
 import Data.Char (digitToInt)
 
