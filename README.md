@@ -10,9 +10,9 @@ An assembler written in Haskell for nX-U8/100 Core.
 This project is still in development and in its alpha state with really basic functionality. As soon as I implement labels and all basic functionalities, I'll provide binaries for Linux, Windows and macOS (all x86_64), right now you have to build it yourself which is super easy but requires GHC and Stack.
 
 ## Ressources for nX-U8/100 assembly
-- Assembly Language -> Core Instruction Manual: https://github.com/fxesdev/nXU8100-resources
-- Questions -> Discord: https://discord.com/invite/QjGpH6rSQQ
-- Casio Calculator related -> Organisation: https://github.com/fxesdev
+- Assembly Language → [Core Instruction Manual](https://github.com/fxesdev/nXU8100-resources)
+- Questions → [Discord](https://discord.com/invite/QjGpH6rSQQ)
+- Casio Calculator related → [Github Organisation](https://github.com/fxesdev)
 
 
 ## Building (all OSs and architectures)
